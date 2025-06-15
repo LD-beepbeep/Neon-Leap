@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Neon Leap</title>
+  <style>
+    html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; background: #13181f; overflow: hidden; }
+    #game { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; background: linear-gradient(120deg, #10141c 70%, #111820 100%); z-index: 1; user-select: none; }
+    canvas { position: absolute; left: 0; top: 0; width: 100vw; height: 100vh; background: transparent; z-index: 2; display: none; }
+    #hud-bar { position: absolute; top: 22px; left: 28px; z-index: 12; display: flex; flex-direction: row; align-items: center; background: rgba(15,19,28,0.87); border-radius: 10px; gap: 22px; padding: 13px 28px 13px 20px; font-family: 'Share Tech Mono', monospace; font-size: 1.18em; pointer-events: none; box-shadow: 0 0 26px #00f1ff22; }
+    #hud-bar .hud-btn { pointer-events: all; background: #191f2a; color: #00f1ff; border: none; font-size: 1.13em; margin-left: 16px; cursor: pointer; padding: 7px 20px; border-radius: 8px; outline: none; font-family: inherit; font-weight: bold; box-shadow: 0 0 9px #00f1ff33; transition: background 0.12s, color 0.12s; }
+    #hud-bar .hud-btn:hover { color: #ffe900; background: #10151c;}
+    .hud-label { color: #ffe900; margin-right:7px;}
+    .hud-money { color: #ffe900; }
+    .hud-score { color: #00f1ff; }
+    .hud-level { color: #85fff7; margin-left:8px;}
+    .slide-menu {
+      position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(18,22,30,0.97);
+      z-index: 1001;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start; justify-content: flex-start;
+      pointer-events: none;
+      transition: transform 0.28s cubic-bezier(.33,1.35,.58,1);
+      transform: translateY(-100%);
+    }
+    .slide-menu.active {
+      transform: translateY(0);
+      pointer-events: all;
+    }
+    .slide-menu-content {
+      margin-top: 60px;
+      margin-left: 38px;
+      min-width: 320px; max-width: 700px;
+      color: #f6f6f6;
+      font-family: 'Share Tech Mono', monospace;
+      max-height: 85vh;
+      overflow: visible;
+      box-sizing: border-box;
+      position: relative;
+    }
+    .slide-menu.shop-active,
+    .slide-menu.levels-active,
+    .slide-menu.shop-active .slide-menu-content,
+    .slide-menu.levels-active .slide-menu-content {
+      width: 100vw !important; max-width: 100vw !important;
+      min-width: 0 !important;
+      margin: 0 !important; padding: 0 !important;
+      background: rgba(14,18,24,0.97) !important;
+      height: 100vh !important; max-height: 100vh !important;
+      border-radius: 0 !important;
+    }
+    .slide-title {
+      font-size: 2.4em;
+      color: #00f1ff;
+      margin-bottom: 12px;
+      letter-spacing: 0.08em;
+      font-family: inherit;
+      font-weight: bold;
+      text-shadow: 0 0 10px #00f1ff99;
+    }
+    .slide-btn {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1.09em;
+      color: #00f1ff;
+      background: #191f2a;
+      border: 2px solid #00f1ff;
+      border-radius: 10px;
+      margin: 13px 7px;
+      padding: 12px 30px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.17s, color 0.17s, border 0.21s;
+      min-width: 160px;
+    }
+    .slide-btn:hover {
+      background: #00f1ff;
+      color: #191f2a;
+      border: 2.8px solid #ffe900;
+    }
+    .close-slide-btn {
+      position: absolute; right: 40px; top: 26px;
+      background: #ffe900; color: #191f2a;
+      font-size: 2.1em;
+      border: none; border-radius: 9px;
+      width: 48px; height: 48px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; font-family: inherit;
+      z-index: 1500;
+      transition: background 0.13s, color 0.13s;
+      box-shadow: 0 0 12px #ffe90055;
+    }
+    .close-slide-btn:hover { background: #00f1ff; color: #ffe900;}
+
+    /* Redesigned Shop Styles - Scrollable Version */
+    .shop-container {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      width: 100%;
+      max-width: 950px;
+      margin: 0 auto;
+      padding: 25px 0 30px 0;
+    }
+    .shop-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 17px;
+    }
+    .shop-header-title {
+      font-size: 2.2em;
+      color: #00f1ff;
+      font-weight: bold;
+      letter-spacing: 0.06em;
+      text-shadow: 0 0 10px #00f1ff77;
+      font-family: inherit;
+    }
+    .shop-currency {
+      font-size: 1.15em;
+      color: #ffe900;
+      font-weight: bold;
+      background: #191f2a;
+      border-radius: 8px;
+      padding: 7px 19px;
+      box-shadow: 0 0 7px #ffe90055;
+    }
+    .shop-tabs {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .shop-tab-btn {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1em;
+      color: #00f1ff;
+      background: #181d22;
+      border: 2px solid #00f1ff;
+      border-radius: 7px 7px 0 0;
+      padding: 10px 32px 7px 32px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.15s, color 0.15s, border 0.18s;
+      outline: none;
+    }
+    .shop-tab-btn.active,
+    .shop-tab-btn:hover {
+      background: #00f1ff;
+      color: #181d22;
+      border-bottom: 2.7px solid #ffe900;
+      z-index: 2;
+    }
+    .shop-section-row {
+      background: rgba(18, 22, 30, 0.92);
+      border-radius: 0 0 17px 17px;
+      padding: 24px 0 18px 0;
+      box-shadow: 0 2px 24px #00f1ff11;
+      min-height: 200px;
+      display: flex;
+      flex-direction: row;
+      gap: 28px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-behavior: smooth;
+      scrollbar-color: #00f1ff #232b36;
+      scrollbar-width: thin;
+      max-width: 100vw;
+    }
+    .shop-card {
+      background: #181d22;
+      border: 2.2px solid #00f1ff;
+      border-radius: 13px;
+      padding: 14px 20px 16px 20px;
+      min-width: 146px;
+      max-width: 190px;
+      flex: 0 0 auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 0 10px #00f1ff33, 0 0 5px #ffe90033;
+      transition: border 0.16s, box-shadow 0.13s;
+      position: relative;
+    }
+    .shop-card.owned {
+      border: 2.7px solid #ffe900;
+      color: #85fff7;
+      box-shadow: 0 0 15px #ffe90033;
+    }
+    .shop-card.selected {
+      outline: 3px solid #00f1ff;
+      color: #00f1ff;
+      z-index: 2;
+    }
+    .shop-card .swatch {
+      margin-bottom: 9px;
+    }
+    .shop-card .player-swatch {
+      width: 38px; height: 38px;
+      border-radius: 9px;
+      border: 2.8px solid #23272b;
+      box-shadow: 0 0 10px #00f1ffcc;
+    }
+    .shop-card .bg-swatch {
+      width: 70px; height: 30px;
+      border-radius: 10px;
+      border: 2.8px solid #23272b;
+      box-shadow: 0 0 10px #00f1ffaa;
+    }
+    .shop-card .card-title {
+      font-size: 1.14em;
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+    .shop-card .card-desc {
+      font-size: .97em;
+      color: #85fff7;
+      margin-bottom: 7px;
+      min-height: 34px;
+    }
+    .shop-card .shop-btn,
+    .shop-card .ability-btn {
+      margin-top: 9px;
+      padding: 7px 20px;
+      font-size: 1em;
+      color: #191f2a;
+      background: #00f1ff;
+      border: none;
+      border-radius: 8px;
+      font-family: inherit;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.12s, color 0.12s;
+      min-width: 85px;
+    }
+    .shop-card .shop-btn:disabled,
+    .shop-card .ability-btn:disabled {
+      background: #23272b;
+      color: #dde6ea;
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+    /* --- Redesigned Levels Menu --- */
+    .levels-container {
+      display: flex;
+      flex-direction: column;
+      gap: 32px;
+      width: 100%;
+      max-width: 950px;
+      margin: 0 auto;
+      padding: 25px 0 30px 0;
+    }
+    .levels-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 17px;
+    }
+    .levels-header-title {
+      font-size: 2.2em;
+      color: #00f1ff;
+      font-weight: bold;
+      letter-spacing: 0.06em;
+      text-shadow: 0 0 10px #00f1ff77;
+      font-family: inherit;
+    }
+    .levels-scroll-row {
+      background: rgba(18, 22, 30, 0.92);
+      border-radius: 0 0 17px 17px;
+      padding: 24px 0 18px 0;
+      box-shadow: 0 2px 24px #00f1ff11;
+      min-height: 120px;
+      display: flex;
+      flex-direction: row;
+      gap: 12px;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scroll-behavior: smooth;
+      scrollbar-color: #00f1ff #232b36;
+      scrollbar-width: thin;
+      max-width: 100vw;
+      align-items: flex-end;
+    }
+    .level-card {
+      background: #181d22;
+      color: #00f1ff;
+      border: 2.2px solid #23272b;
+      border-radius: 13px;
+      font-size: 1.13em;
+      padding: 20px 0 10px 0;
+      width: 75px; min-width:75px; max-width:75px; height: 96px;
+      margin: 0 0 0 0;
+      font-family: 'Share Tech Mono', monospace;
+      box-shadow: 0 0 7px #00f1ff33;
+      outline: none;
+      cursor: pointer;
+      font-weight: bold;
+      flex: 0 0 auto;
+      position: relative;
+      transition: background 0.12s, color 0.12s, border 0.12s, box-shadow 0.15s;
+      display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
+    }
+    .level-card.locked {
+      color: #858b8c;
+      background: #15181f;
+      border: 2.8px solid #23272b;
+      cursor: not-allowed;
+      opacity: 0.66;
+      box-shadow: none;
+    }
+    .level-card.selected {
+      outline: 3px solid #00f1ff;
+      color: #ffe900;
+      z-index: 2;
+      border: 2.7px solid #ffe900;
+      background: #191f2a;
+    }
+    .level-card .level-num {
+      font-size: 1.37em;
+      font-weight: bold;
+      margin-bottom: 6px;
+      margin-top: 7px;
+    }
+    .level-card .lock {
+      position: absolute; left: 50%; top: 32%;
+      transform: translate(-50%,-50%);
+      font-size: 1.7em;
+      color: #ffe900cc;
+      text-shadow: 0 0 7px #ffe90099;
+      pointer-events: none;
+    }
+    .level-card .trophy {
+      font-size: 1.2em;
+      color: #ffe900;
+      margin-top: 2px;
+      text-shadow: 0 0 6px #ffe90099;
+    }
+    @media (max-width: 900px) {
+      .shop-container, .levels-container { max-width: 99vw; }
+      .shop-section-row, .levels-scroll-row { gap: 11px; }
+    }
+    @media (max-width: 700px) {
+      .slide-menu-content { margin-top: 30px; margin-left: 8vw; padding-right: 3vw;}
+      #hud-bar { left: 2vw; top: 2vw; font-size:0.97em; padding:6px 10px 6px 10px;}
+      .shop-container, .levels-container { padding-left: 3vw; padding-right: 3vw; }
+      .shop-section-row, .levels-scroll-row { padding-left: 0; padding-right: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div id="game">
+    <canvas id="game-canvas"></canvas>
+    <div id="hud-bar">
+      <span class="hud-label hud-money">₳ <span id="money-amount">0</span></span>
+      <span class="hud-label hud-score" id="score-ui">SCORE: 0</span>
+      <span class="hud-label hud-level" id="level-ui">1</span>
+      <button class="hud-btn" id="exit-btn">EXIT</button>
+    </div>
+    <div id="slide-menu" class="slide-menu"><div class="slide-menu-content"></div></div>
+    <audio id="sfx-jump" src="https://cdn.jsdelivr.net/gh/joshwcomeau/beatmachine@main/public/samples/Jump.wav"></audio>
+    <audio id="sfx-coin" src="https://cdn.jsdelivr.net/gh/joshwcomeau/beatmachine@main/public/samples/Perc2.wav"></audio>
+    <audio id="sfx-death" src="https://cdn.jsdelivr.net/gh/joshwcomeau/beatmachine@main/public/samples/Snare2.wav"></audio>
+    <audio id="sfx-goal" src="https://cdn.jsdelivr.net/gh/joshwcomeau/beatmachine@main/public/samples/Clap.wav"></audio>
+  </div>
+  <script>
+    // --- ABILITIES SYSTEM ---
+    const ABILITIES = [
+      {name:"Jump Higher", desc:"Jump is 20% higher", price:800, key:"jumpHigher"},
+      {name:"Run Faster", desc:"Max speed is increased", price:1200, key:"runFaster"},
+      {name:"Air Control+", desc:"Better control mid-air", price:1400, key:"airControl"},
+      {name:"Double Jump", desc:"Allows a second jump in air", price:2000, key:"doubleJump"}
+    ];
+    const PLAYER_SKINS = [
+      {name:"Classic Yellow", color:"#ffe900", price:0},
+      {name:"Neon Blue", color:"#3497ff", price:400},
+      {name:"White Chrome", color:"#dde6ea", price:550},
+      {name:"Minty Green", color:"#20e8b1", price:900},
+      {name:"Cyber Orange", color:"#ef7b0a", price:1200},
+      {name:"Red Alert", color:"#e24c4b", price:1400},
+      {name:"Purple Steel", color:"#a86cff", price:1800},
+      {name:"Midnight", color:"#212f3b", price:2200},
+      {name:"Diamond Eyes", color:"#fff", price:77777},
+      {name:"Quantum Black", color:"#050505", price:99999}
+    ];
+    const BG_THEMES = [
+      {name:"Classic", grad:["#181d22","#283248"], price:0},
+      {name:"Night City", grad:["#14181f","#173a5c"], price:300},
+      {name:"Synthwave", grad:["#301c34","#2e3b6e"], price:600},
+      {name:"Emerald Grid", grad:["#122821","#16a085"], price:950},
+      {name:"Orange Neon", grad:["#4e1b1b","#ef7b0a"], price:1300},
+      {name:"Midnight Steel", grad:["#191f2a","#15181f"], price:2000},
+      {name:"Platinum Ice", grad:["#e2e8ef","#111820"], price:77777},
+      {name:"Cyber Royal", grad:["#6a29db","#212b36"], price:99999}
+    ];
+    const GAME_NAME = "Neon Leap";
+    const STUDIO = "LD STUDIOS";
+    const LEVELS_COUNT = 100;
+    const TILE = 36, MAP_W = 25, MAP_H = 15;
+    const GRAVITY = 0.9;
+    const JUMP_VELOCITY = -11.2;
+    const JUMP_COOLDOWN = 220;
+    const COYOTE_TIME = 120;
+    const JUMP_BUFFER = 120;
+    const MOVE_ACC = 1.5, MOVE_DEC = 0.6, MAX_SPEED = 5.1;
+    const MAX_FALL = 12;
+    const KEYMAP = { 'ArrowLeft':'left','ArrowRight':'right','ArrowUp':'up','ArrowDown':'down','a':'left','d':'right','w':'up','s':'down',' ':'jump' };
+    function makeEasyLevel() {
+      let map = Array(MAP_H).fill().map(()=>Array(MAP_W).fill(0));
+      for(let x=0;x<MAP_W;x++) map[MAP_H-1][x]=1;
+      for(let y=0;y<MAP_H;y++) map[y][0]=1,map[y][MAP_W-1]=1;
+      for(let i=5;i<MAP_W-4;i+=4) map[MAP_H-2][i]=2;
+      map[MAP_H-2][MAP_W-3]=3;
+      return map;
+    }
+    function makeFairLevel(n, seed) {
+      let rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+      let map = Array(MAP_H).fill().map(()=>Array(MAP_W).fill(0));
+      for(let y=0;y<MAP_H;y++) map[y][0]=1,map[y][MAP_W-1]=1;
+      let path = [];
+      let y = MAP_H-2;
+      for(let x=2;x<MAP_W-2;x++) {
+        map[y][x]=1; path.push([x,y]);
+        let jumpUp = rand()<0.2 && y>4 && map[y-1][x-1]===1 && map[y-1][x-2]===1;
+        let jumpDown = rand()<0.31 && y<MAP_H-3;
+        if(jumpUp) y -= 1; else if(jumpDown) y += 1;
+      }
+      map[y-1][MAP_W-3]=3;
+      let coinCt = 4+Math.floor(n/3);
+      for(let i=0;i<coinCt;i++) {
+        let p = path[2+Math.floor(rand()*(path.length-4))];
+        if(map[p[1]-1][p[0]]===0) map[p[1]-1][p[0]]=2;
+      }
+      let hazardCt = Math.floor(n/3);
+      for(let i=0;i<hazardCt;i++) {
+        let tries=0;
+        while(tries++<10) {
+          let tx=2+Math.floor(rand()*(MAP_W-4)),ty=3+Math.floor(rand()*(MAP_H-4));
+          if(map[ty][tx]===0 && !path.some(p=>(p[0]===tx&&p[1]===ty))) {map[ty][tx]=4;break;}
+        }
+      }
+      if(n>5 && rand()<0.5) {
+        let p = path[2+Math.floor(rand()*(path.length-6))];
+        if(map[p[1]-1][p[0]]===0) map[p[1]-1][p[0]]=5;
+      }
+      return map;
+    }
+    let LEVELS = [];
+    LEVELS.push(makeEasyLevel());
+    for(let i=1;i<LEVELS_COUNT;i++) {
+      let seed = i*20003 + 1237;
+      LEVELS.push(makeFairLevel(i, seed));
+    }
+    let save = {
+      unlocked: 1,
+      money: 0,
+      ownedPlayers: [0],
+      ownedBgs: [0],
+      selectedPlayer: 0,
+      selectedBg: 0,
+      levelsRewarded: [],
+      lastLevel: 0,
+      abilities: {}
+    };
+    if(localStorage.getItem('ld_neonleap_save')) {
+      try {
+        let s = JSON.parse(localStorage.getItem('ld_neonleap_save'));
+        Object.assign(save, s);
+        if(!save.levelsRewarded) save.levelsRewarded = [];
+        if(typeof save.lastLevel !== "number") save.lastLevel = 0;
+        if(!save.abilities) save.abilities = {};
+      } catch{}
+    }
+    function saveProgress() { localStorage.setItem('ld_neonleap_save', JSON.stringify(save)); }
+    function setUnlocked(n) { save.unlocked = Math.max(save.unlocked, n); saveProgress(); }
+    function addMoney(amount, levelIndex) {
+      if (typeof levelIndex === "number") {
+        if(save.levelsRewarded.includes(levelIndex)) return;
+        save.levelsRewarded.push(levelIndex);
+        save.money += amount;
+      } else { save.money += amount; }
+      updateMoneyUI(); saveProgress();
+    }
+    function updateMoneyUI() { document.getElementById('money-amount').textContent = save.money; }
+    function playSFX(id, vol=1) { try { let sfx=document.getElementById(id); sfx.currentTime=0; sfx.volume=vol; sfx.play(); }catch{} }
+    const canvas = document.getElementById('game-canvas');
+    const hudBar = document.getElementById('hud-bar');
+    const slideMenu = document.getElementById('slide-menu');
+    const slideContent = slideMenu.querySelector('.slide-menu-content');
+    let gameStarted = false, running = false, state = "menu", lastMenu = "";
+    let afterWinNextLevelNum = null;
+    function setGameVisibility(on) {
+      canvas.style.display = on ? 'block' : 'none';
+      hudBar.style.display = on ? 'flex' : 'none';
+      running = on;
+      if (on) resizeCanvas();
+    }
+    function showSlideMenu(innerHTML, shopMode = false, levelsMode = false) {
+      slideContent.innerHTML = innerHTML + '<button class="close-slide-btn" onclick="showMainMenu()">&times;</button>';
+      if(shopMode){
+        slideMenu.classList.add('shop-active');
+        slideMenu.classList.remove('levels-active');
+      } else if (levelsMode) {
+        slideMenu.classList.add('levels-active');
+        slideMenu.classList.remove('shop-active');
+      } else {
+        slideMenu.classList.remove('shop-active');
+        slideMenu.classList.remove('levels-active');
+      }
+      slideMenu.classList.add('active');
+    }
+    function showMainMenu() {
+      state = "menu"; setGameVisibility(false);
+      slideMenu.classList.remove('shop-active');
+      slideMenu.classList.remove('levels-active');
+      showSlideMenu(`
+        <div class="slide-title">${GAME_NAME}</div>
+        <div style="color:#ffe900;margin-bottom:28px;">A Cyberpunk Parkour Platformer<br>by ${STUDIO}</div>
+        <button class="slide-btn" onclick="startTheGame()">START</button>
+        <button class="slide-btn" onclick="showLevelSelect()">Level Select</button>
+        <button class="slide-btn" onclick="showShop()">Shop</button>
+        <div style="margin-top:20px;color:#ffe900;">Move: ←/→/A/D | Jump: ↑/W/SPACE</div>
+      `);
+    }
+    // --- Redesigned Levels Menu ---
+    function showLevelSelect(selectedLevel = null) {
+      let lvls = '';
+      for(let i=0;i<LEVELS_COUNT;i++) {
+        let isLocked = (i+1) > save.unlocked;
+        let isSelected = i === (selectedLevel !== null ? selectedLevel : (save.lastLevel||0));
+        let hasReward = save.levelsRewarded && save.levelsRewarded.includes(i);
+        lvls += `<button class="level-card${isLocked ? ' locked' : ''}${isSelected ? ' selected' : ''}" onclick="if(!this.classList.contains('locked')){startTheGame(${i})}">
+          <div class="level-num">${i+1}</div>
+          ${isLocked ? '<span class="lock">&#128274;</span>' : ''}
+          ${hasReward && !isLocked ? '<span class="trophy">&#x1F3C6;</span>' : ''}
+        </button>`;
+      }
+      showSlideMenu(`
+        <div class="levels-container">
+          <div class="levels-header">
+            <div class="levels-header-title">LEVELS</div>
+            <div style="font-size:1.13em;color:#ffe900;font-weight:bold;background:#191f2a;padding:7px 19px;border-radius:8px;box-shadow:0 0 7px #ffe90055;">
+              Unlocked: <span style="color:#00f1ff;">${save.unlocked}</span> / ${LEVELS_COUNT}
+            </div>
+          </div>
+          <div class="levels-scroll-row">${lvls}</div>
+          <button class="slide-btn" style="margin:24px auto 0 auto;width:220px;" onclick="showMainMenu()">Back to Menu</button>
+        </div>
+      `, false, true);
+    }
+    // --- Redesigned SHOP - HORIZONTALLY SCROLLABLE ---
+    function showShop(activeTab = 'players') {
+      function renderTabBtn(tab, label) {
+        return `<button class="shop-tab-btn${activeTab===tab?' active':''}" onclick="showShop('${tab}')">${label}</button>`;
+      }
+      // Players
+      let playerCards = PLAYER_SKINS.map((skin,i)=>
+        `<div class="shop-card${save.ownedPlayers.includes(i)?' owned':''}${save.selectedPlayer===i?' selected':''}">
+          <div class="swatch player-swatch" style="background:${skin.color};"></div>
+          <div class="card-title">${skin.name}</div>
+          <div class="card-desc"></div>
+          ${
+            save.ownedPlayers.includes(i)
+            ? `<button class="shop-btn" ${save.selectedPlayer===i?'disabled':''} onclick="selectPlayer(${i})">${save.selectedPlayer===i?'Selected':'Select'}</button>`
+            : `<button class="shop-btn" ${save.money<skin.price?'disabled':''} onclick="buyPlayer(${i})">Buy ₳${skin.price}</button>`
+          }
+        </div>`
+      ).join('');
+      // Backgrounds
+      let bgCards = BG_THEMES.map((bg,i)=>
+        `<div class="shop-card${save.ownedBgs.includes(i)?' owned':''}${save.selectedBg===i?' selected':''}">
+          <div class="swatch bg-swatch" style="background:linear-gradient(90deg,${bg.grad[0]},${bg.grad[1]});"></div>
+          <div class="card-title">${bg.name}</div>
+          <div class="card-desc"></div>
+          ${
+            save.ownedBgs.includes(i)
+            ? `<button class="shop-btn" ${save.selectedBg===i?'disabled':''} onclick="selectBg(${i})">${save.selectedBg===i?'Selected':'Select'}</button>`
+            : `<button class="shop-btn" ${save.money<bg.price?'disabled':''} onclick="buyBg(${i})">Buy ₳${bg.price}</button>`
+          }
+        </div>`
+      ).join('');
+      // Abilities
+      let abilityCards = ABILITIES.map((ab,i)=>
+        `<div class="shop-card${save.abilities[ab.key]?' owned':''}">
+          <div class="card-title" style="color:${save.abilities[ab.key]?'#00f1ff':'#ffe900'};">${ab.name}</div>
+          <div class="card-desc">${ab.desc}</div>
+          ${
+            save.abilities[ab.key]
+            ? `<button class="ability-btn" disabled>Owned</button>`
+            : `<button class="ability-btn" ${save.money<ab.price?'disabled':''} onclick="buyAbility('${ab.key}')">Buy ₳${ab.price}</button>`
+          }
+        </div>`
+      ).join('');
+
+      let tabContent = {
+        players: playerCards,
+        backgrounds: bgCards,
+        abilities: abilityCards
+      }[activeTab];
+
+      showSlideMenu(`
+        <div class="shop-container">
+          <div class="shop-header">
+            <div class="shop-header-title">SHOP</div>
+            <div class="shop-currency">₳ ${save.money}</div>
+          </div>
+          <div class="shop-tabs">
+            ${renderTabBtn('players','Players')}
+            ${renderTabBtn('backgrounds','Backgrounds')}
+            ${renderTabBtn('abilities','Abilities')}
+          </div>
+          <div class="shop-section-row">${tabContent}</div>
+          <button class="slide-btn" style="margin:24px auto 0 auto;width:220px;" onclick="showMainMenu()">Back to Menu</button>
+        </div>
+      `, true, false);
+    }
+    window.showShop = showShop;
+
+    window.buyPlayer = function(i) {
+      if(save.ownedPlayers.includes(i)) return;
+      let cost = PLAYER_SKINS[i].price;
+      if(save.money >= cost) {
+        save.money -= cost;
+        save.ownedPlayers.push(i);
+        save.selectedPlayer = i;
+        updateMoneyUI(); saveProgress();
+        showShop('players');
+      }
+    }
+    window.selectPlayer = function(i) {
+      if(save.ownedPlayers.includes(i)) {
+        save.selectedPlayer = i; saveProgress(); showShop('players');
+      }
+    }
+    window.buyBg = function(i) {
+      if(save.ownedBgs.includes(i)) return;
+      let cost = BG_THEMES[i].price;
+      if(save.money >= cost) {
+        save.money -= cost;
+        save.ownedBgs.push(i);
+        save.selectedBg = i;
+        updateMoneyUI(); saveProgress();
+        showShop('backgrounds');
+      }
+    }
+    window.selectBg = function(i) {
+      if(save.ownedBgs.includes(i)) {
+        save.selectedBg = i; saveProgress(); showShop('backgrounds');
+      }
+    }
+    window.buyAbility = function(key) {
+      let idx = ABILITIES.findIndex(ab=>ab.key===key);
+      if(idx<0 || save.abilities[key]) return;
+      let cost = ABILITIES[idx].price;
+      if(save.money >= cost) {
+        save.money -= cost;
+        save.abilities[key] = true;
+        updateMoneyUI(); saveProgress();
+        showShop('abilities');
+      }
+    }
+    let currentLevel = save.lastLevel||0, score = 0, coins = 0, deaths = 0;
+    let map = LEVELS[currentLevel], player, keys = {}, time=0;
+    let lastJumpTime = 0, lastOnGroundTime = 0, jumpBufferTime = 0;
+    let scoreUI = document.getElementById('score-ui');
+    let levelUI = document.getElementById('level-ui');
+    let exitBtn = document.getElementById('exit-btn');
+    function setGameVisibility(on) {
+      canvas.style.display = on ? 'block' : 'none';
+      hudBar.style.display = on ? 'flex' : 'none';
+      running = on;
+      if (on) resizeCanvas();
+    }
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    function startTheGame(levelIdx=null) {
+      gameStarted = true;
+      setGameVisibility(true);
+      slideMenu.classList.remove('active');
+      let n = (typeof levelIdx === "number") ? levelIdx : (save.lastLevel||0);
+      startLevel(n);
+    }
+    function startLevel(n) {
+      currentLevel = n;
+      save.lastLevel = n; saveProgress();
+      map = JSON.parse(JSON.stringify(LEVELS[currentLevel]));
+      levelUI.innerHTML = (currentLevel+1);
+      resetPlayer();
+      coins = 0;
+      score = Math.max(score, 0);
+      state = "playing";
+      slideMenu.classList.remove('active');
+      exitBtn.style.display="inline-block";
+      time = 0;
+      afterWinNextLevelNum = null;
+      render();
+    }
+    exitBtn.onclick = function() { showMainMenu(); exitBtn.style.display="none"; };
+    function updateUI() {
+      score = Math.max(score, 0);
+      scoreUI.textContent = "SCORE: " + score;
+      levelUI.textContent = currentLevel+1;
+      updateMoneyUI();
+    }
+    function startPosFor(map) {
+      for(let y=0;y<MAP_H-1;y++)
+        for(let x=1;x<MAP_W-1;x++)
+          if(map[y][x]===1&&map[y-1][x]===0) return {x: x*TILE+6, y: (y-1)*TILE};
+      return {x: 3*TILE+6, y: (MAP_H-5)*TILE};
+    }
+    function getAbilityValue(key, base, mod) {
+      return save.abilities[key] ? base * mod : base;
+    }
+    function resetPlayer() {
+      let pos = startPosFor(map);
+      player = {
+        x: pos.x, y: pos.y, w: 26, h: 35,
+        vx: 0, vy: 0,
+        color: PLAYER_SKINS[save.selectedPlayer]?.color || "#ffe900",
+        coins: 0, alive: true, onGround: false,
+        coyote: 0, jumpBuffer: 0,
+        jumpHeld: false,
+        facing: 1,
+        eye: {x:0,y:0},
+        canDoubleJump: save.abilities.doubleJump,
+        jumpsLeft: save.abilities.doubleJump ? 2 : 1
+      };
+    }
+    function solidAt(px,py) {
+      let tx=Math.floor(px/TILE),ty=Math.floor(py/TILE);
+      if(tx<0||ty<0||tx>=MAP_W||ty>=MAP_H) return 1;
+      return map[ty][tx]===1;
+    }
+    function tileAt(px,py) {
+      let tx=Math.floor(px/TILE),ty=Math.floor(py/TILE);
+      if(tx<0||ty<0||tx>=MAP_W||ty>=MAP_H) return 1;
+      return map[ty][tx];
+    }
+    function setTile(px,py,v) {
+      let tx=Math.floor(px/TILE),ty=Math.floor(py/TILE);
+      if(tx>=0&&ty>=0&&tx<MAP_W&&ty<MAP_H) map[ty][tx]=v;
+    }
+    function stepPlayer() {
+      if(!player.alive) return;
+      let jumpVel = getAbilityValue("jumpHigher", JUMP_VELOCITY, 1.20);
+      let maxSpeed = getAbilityValue("runFaster", MAX_SPEED, 1.25);
+      let moveAcc = getAbilityValue("airControl", MOVE_ACC, 1.22);
+      let moveAccGround = MOVE_ACC;
+      let airControl = save.abilities.airControl ? 0.8 : 0.6;
+      let left = keys.left || keys.a;
+      let right = keys.right || keys.d;
+      let jump = keys.jump || keys.up || keys.w || keys[' '];
+      if(left && !right) player.facing = -1;
+      if(right && !left) player.facing = 1;
+      if(player.onGround) {
+        if(left && !right) player.vx -= moveAccGround;
+        else if(right && !left) player.vx += moveAccGround;
+        else player.vx *= MOVE_DEC;
+      } else {
+        if(left && !right) player.vx -= moveAcc * airControl;
+        else if(right && !left) player.vx += moveAcc * airControl;
+        else player.vx *= MOVE_DEC;
+      }
+      player.vx = Math.max(-maxSpeed, Math.min(maxSpeed, player.vx));
+      if(Math.abs(player.vx)<0.2) player.vx = 0;
+      player.vy += GRAVITY;
+      if(player.vy > MAX_FALL) player.vy = MAX_FALL;
+      let now = performance.now();
+      let wasOnGround = player.onGround;
+      player.onGround = false;
+      player.x += player.vx;
+      if(player.vx > 0 && (solidAt(player.x+player.w,player.y+2) || solidAt(player.x+player.w,player.y+player.h-2))) {
+        player.x = Math.floor((player.x+player.w)/TILE)*TILE-player.w-0.01;
+        player.vx = 0;
+      } else if(player.vx < 0 && (solidAt(player.x,player.y+2) || solidAt(player.x,player.y+player.h-2))) {
+        player.x = Math.ceil((player.x)/TILE)*TILE+0.01;
+        player.vx = 0;
+      }
+      player.y += player.vy;
+      if(player.vy > 0 && (solidAt(player.x+2,player.y+player.h) || solidAt(player.x+player.w-2,player.y+player.h))) {
+        player.y = Math.floor((player.y+player.h)/TILE)*TILE-player.h-0.01;
+        player.vy = 0;
+        player.onGround = true;
+        lastOnGroundTime = now;
+        player.jumpsLeft = save.abilities.doubleJump ? 2 : 1;
+      }
+      if(player.vy < 0 && (solidAt(player.x+2,player.y) || solidAt(player.x+player.w-2,player.y))) {
+        player.y = Math.ceil((player.y)/TILE)*TILE+0.01;
+        player.vy = 0;
+      }
+      player.x = Math.max(0,Math.min(player.x,MAP_W*TILE-player.w));
+      if(player.y>MAP_H*TILE+100) { player.alive=false; playSFX('sfx-death'); setTimeout(loseLevel,100); }
+      if(jump) player.jumpHeld = true;
+      else player.jumpHeld = false;
+      if(jump && !player.jumpBuffered) {
+        player.jumpBuffered = true;
+        jumpBufferTime = now;
+      }
+      if(!jump) player.jumpBuffered = false;
+      if(player.jumpHeld && (player.onGround || now - lastOnGroundTime < COYOTE_TIME) && now - lastJumpTime > JUMP_COOLDOWN && now - jumpBufferTime < JUMP_BUFFER) {
+        player.vy = jumpVel;
+        player.onGround = false;
+        lastJumpTime = now;
+        jumpBufferTime = -99999;
+        playSFX('sfx-jump',.8);
+        player.jumpsLeft = save.abilities.doubleJump ? 1 : 0;
+      } else if(player.jumpHeld && save.abilities.doubleJump && !player.onGround && player.jumpsLeft > 0 && now - lastJumpTime > JUMP_COOLDOWN) {
+        player.vy = jumpVel;
+        player.jumpsLeft--;
+        lastJumpTime = now;
+        playSFX('sfx-jump',.7);
+      }
+      if(!jump && player.vy < 0) player.vy *= 0.65;
+      let eyex = player.facing * 3 + Math.max(-2, Math.min(2, Math.round(player.vx/2)));
+      let eyey = player.vy < -2 ? -2 : (player.vy > 2 ? 2 : 0);
+      player.eye.x = eyex; player.eye.y = eyey;
+      if(tileAt(player.x+player.w/2,player.y+player.h/2)===2) {
+        setTile(player.x+player.w/2,player.y+player.h/2,0);
+        score = Math.max(0,score+50); coins++; player.coins++;
+        playSFX('sfx-coin',0.5);
+      }
+      if(tileAt(player.x+player.w/2,player.y+player.h+4)===5) {
+        player.vy = jumpVel*1.25;
+      }
+      if(tileAt(player.x+player.w/2,player.y+player.h/2)===3) {
+        player.alive = false; setTimeout(winLevel,120);
+      }
+      if(tileAt(player.x+player.w/2,player.y+player.h/2)===4) {
+        player.alive = false; playSFX('sfx-death',0.7); setTimeout(loseLevel,100);
+      }
+    }
+    function drawTile(ctx, tx, ty, tile) {
+      const x=tx*TILE, y=ty*TILE;
+      switch(tile) {
+        case 1:
+          ctx.save();
+          ctx.shadowColor="#00f1ff";ctx.shadowBlur=12;
+          ctx.fillStyle="#23272b"; ctx.fillRect(x+2,y+2,TILE-4,TILE-4);
+          ctx.strokeStyle="#00f1ff";ctx.lineWidth=2.5;ctx.strokeRect(x+4,y+4,TILE-8,TILE-8);
+          ctx.restore();
+          break;
+        case 2:
+          ctx.save();
+          ctx.shadowColor="#ffe900";ctx.shadowBlur=9;
+          ctx.beginPath();ctx.arc(x+TILE/2,y+TILE/2,10,0,2*Math.PI);
+          ctx.fillStyle="#ffe900"; ctx.fill();
+          ctx.lineWidth=2; ctx.strokeStyle="#fff";
+          ctx.stroke();
+          ctx.restore();
+          break;
+        case 3:
+          ctx.save();
+          ctx.shadowColor="#ffe900";ctx.shadowBlur=13;
+          ctx.beginPath();ctx.arc(x+TILE/2,y+TILE/2,12,0,2*Math.PI);
+          ctx.fillStyle="#2ce6c9"; ctx.fill();
+          ctx.restore();
+          ctx.save();
+          ctx.font="bold 16px 'Share Tech Mono', monospace";
+          ctx.fillStyle="#23272b";
+          ctx.textAlign="center";
+          ctx.fillText("🏁",x+TILE/2,y+TILE/2+7);
+          ctx.restore();
+          break;
+        case 4:
+          ctx.save();
+          ctx.shadowColor="#ef7b0a"; ctx.shadowBlur=9;
+          ctx.fillStyle="#ef7b0a";
+          ctx.beginPath();
+          ctx.moveTo(x+3,y+TILE-3);
+          for(let i=0;i<5;i++)
+            ctx.lineTo(x+3+i*TILE/4,(i%2)?y+TILE-12:y+TILE-3);
+          ctx.lineTo(x+TILE-3,y+TILE-3);
+          ctx.closePath();ctx.fill();
+          ctx.restore();
+          break;
+        case 5:
+          ctx.save();
+          ctx.shadowColor="#00f1ff";
+          ctx.shadowBlur=9;
+          ctx.fillStyle="#00f1ff";
+          ctx.fillRect(x+7,y+TILE-9,TILE-14,5);
+          ctx.restore();
+          break;
+      }
+    }
+    function render() {
+      const ctx = canvas.getContext("2d");
+      resizeCanvas();
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      let theme = BG_THEMES[save.selectedBg];
+      let grad=ctx.createLinearGradient(0,0,canvas.width,canvas.height);
+      grad.addColorStop(0,theme.grad[0]); grad.addColorStop(1,theme.grad[1]);
+      ctx.fillStyle=grad; ctx.fillRect(0,0,canvas.width,canvas.height);
+      const gridW = MAP_W, gridH = MAP_H;
+      const scale = Math.min(canvas.width / (gridW * TILE), canvas.height / (gridH * TILE));
+      const offsetX = (canvas.width - gridW * TILE * scale) / 2;
+      const offsetY = (canvas.height - gridH * TILE * scale) / 2;
+      ctx.save();
+      ctx.translate(offsetX, offsetY);
+      ctx.scale(scale, scale);
+      ctx.save();
+      ctx.globalAlpha=0.14;
+      ctx.strokeStyle="#00f1ff";
+      for(let x=0;x<=MAP_W;x++) {
+        ctx.beginPath();
+        ctx.moveTo(x*TILE,0); ctx.lineTo(x*TILE,MAP_H*TILE);
+        ctx.stroke();
+      }
+      for(let y=0;y<=MAP_H;y++) {
+        ctx.beginPath();
+        ctx.moveTo(0,y*TILE); ctx.lineTo(MAP_W*TILE,y*TILE);
+        ctx.stroke();
+      }
+      ctx.globalAlpha=1.0;
+      ctx.restore();
+      for(let y=0;y<MAP_H;y++)
+        for(let x=0;x<MAP_W;x++) {
+          let tile=map[y][x];
+          if(tile) drawTile(ctx,x,y,tile);
+        }
+      let px=player.x, py=player.y;
+      ctx.save();
+      ctx.shadowColor=player.color; ctx.shadowBlur=18;
+      ctx.fillStyle=player.color;
+      ctx.fillRect(px+5,py+8,player.w-10,player.h-14);
+      ctx.restore();
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(px+player.w/2, py+13, 12, 0, 2*Math.PI);
+      ctx.fillStyle=player.color; ctx.shadowColor="#fff"; ctx.shadowBlur=7;
+      ctx.fill();
+      ctx.restore();
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(px+player.w/2-5+player.eye.x, py+13+player.eye.y, 3.2, 0, 2*Math.PI);
+      ctx.arc(px+player.w/2+5+player.eye.x, py+13+player.eye.y, 3.2, 0, 2*Math.PI);
+      ctx.fillStyle="#181e24";
+      ctx.shadowColor="#fff";
+      ctx.shadowBlur=0;
+      ctx.fill();
+      ctx.restore();
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(px+player.w/2-4.5+player.eye.x, py+12.5+player.eye.y, 1, 0, 2*Math.PI);
+      ctx.arc(px+player.w/2+5.5+player.eye.x, py+12.5+player.eye.y, 1, 0, 2*Math.PI);
+      ctx.fillStyle="#fff";
+      ctx.globalAlpha=0.6;
+      ctx.fill();
+      ctx.restore();
+      ctx.restore();
+      updateUI();
+    }
+    function winLevel() {
+      let reward = 100 + Math.floor(currentLevel*2.5);
+      score = Math.max(0, Math.floor(score + 500 + coins*30 - time*2));
+      setUnlocked(currentLevel+2);
+      addMoney(reward, currentLevel);
+      playSFX('sfx-goal');
+      afterWinNextLevelNum = currentLevel+1;
+      showSlideMenu(`
+        <div class="slide-title">LEVEL ${currentLevel+1} COMPLETE!</div>
+        <div style="color:#ffe900;margin-bottom:18px;">Score: ${score} <br> ${save.levelsRewarded.includes(currentLevel) ? "+₳"+reward : "(Already rewarded)"}</div>
+        <button class="slide-btn" onclick="startTheGame(${currentLevel+1})" id="next-level-btn">NEXT LEVEL (SPACE)</button>
+        <button class="slide-btn" onclick="showLevelSelect()">Level Select</button>
+        <button class="slide-btn" onclick="showShop()">Shop</button>
+        <div style="font-size:.93em;margin-top:14px;color:#85fff7;">Tip: Press SPACE for next level</div>
+      `);
+      exitBtn.style.display="none";
+      state = "win";
+    }
+    function loseLevel() {
+      deaths++; playSFX('sfx-death');
+      setTimeout(()=>{
+        showSlideMenu(`
+          <div class="slide-title">GAME OVER</div>
+          <div style="color:#ffe900;margin-bottom:15px;">Try Again?</div>
+          <button class="slide-btn" onclick="startTheGame(${currentLevel})">RETRY</button>
+          <button class="slide-btn" onclick="showLevelSelect()">Level Select</button>
+          <button class="slide-btn" onclick="showShop()">Shop</button>
+        `);
+        exitBtn.style.display="none";
+        state = "lose";
+      }, 200);
+    }
+    function gameLoop() {
+      if(running && state==="playing") {
+        time++;
+        stepPlayer();
+        render();
+      }
+      requestAnimationFrame(gameLoop);
+    }
+    requestAnimationFrame(gameLoop);
+    window.addEventListener('keydown',e=>{
+      if(state!=="playing") {
+        if(state==="win" && afterWinNextLevelNum && (e.key===" "||e.key==="Spacebar")) {
+          startTheGame(afterWinNextLevelNum);
+        }
+        return;
+      }
+      let k=KEYMAP[e.key];
+      if(k) keys[k]=1;
+      if(e.key==="Escape" && state==="playing") showMainMenu();
+    });
+    window.addEventListener('keyup',e=>{
+      let k=KEYMAP[e.key];
+      if(k) keys[k]=0;
+    });
+    window.showMainMenu = showMainMenu;
+    window.showLevelSelect = showLevelSelect;
+    window.startTheGame = startTheGame;
+    updateMoneyUI();
+    showMainMenu();
+    window.focus();
+    window.addEventListener('touchmove',e=>{e.preventDefault();},{passive:false});
+  </script>
+</body>
+</html>
