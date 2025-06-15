@@ -8,13 +8,56 @@
     html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; background: #13181f; overflow: hidden; }
     #game { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; background: linear-gradient(120deg, #10141c 70%, #111820 100%); z-index: 1; user-select: none; }
     canvas { position: absolute; left: 0; top: 0; width: 100vw; height: 100vh; background: transparent; z-index: 2; display: none; }
-    #hud-bar { position: absolute; top: 22px; left: 28px; z-index: 12; display: flex; flex-direction: row; align-items: center; background: rgba(15,19,28,0.87); border-radius: 10px; gap: 22px; padding: 13px 28px 13px 20px; font-family: 'Share Tech Mono', monospace; font-size: 1.18em; pointer-events: none; box-shadow: 0 0 26px #00f1ff22; }
-    #hud-bar .hud-btn { pointer-events: all; background: #191f2a; color: #00f1ff; border: none; font-size: 1.13em; margin-left: 16px; cursor: pointer; padding: 7px 20px; border-radius: 8px; outline: none; font-family: inherit; font-weight: bold; box-shadow: 0 0 9px #00f1ff33; transition: background 0.12s, color 0.12s; }
+    #hud-bar { position: absolute; top: 22px; left: 28px; z-index: 12; display: flex; flex-direction: row; align-items: center; background: rgba(15,19,28,0.87); border-radius: 10px; gap: 22px; padding: 13px 24px 13px 18px; pointer-events: none; }
+    #hud-bar .hud-btn { pointer-events: all; background: #191f2a; color: #00f1ff; border: none; font-size: 1.13em; margin-left: 16px; cursor: pointer; padding: 7px 20px; border-radius: 8px; outline: none; font-family: inherit; font-weight: bold; transition: background 0.13s, color 0.13s; }
     #hud-bar .hud-btn:hover { color: #ffe900; background: #10151c;}
     .hud-label { color: #ffe900; margin-right:7px;}
     .hud-money { color: #ffe900; }
     .hud-score { color: #00f1ff; }
     .hud-level { color: #85fff7; margin-left:8px;}
+    /* --- MOBILE CONTROLS --- */
+    #mobile-controls {
+      display: none;
+      position: fixed;
+      left: 0; bottom: 0;
+      width: 100vw; height: 38vw;
+      max-height: 210px;
+      z-index: 800;
+      pointer-events: none;
+    }
+    .mobile-btn {
+      pointer-events: all;
+      position: absolute;
+      background: rgba(22,27,38,0.96);
+      border: 2.3px solid #00f1ff;
+      color: #00f1ff;
+      border-radius: 23px;
+      width: 62px; height: 62px;
+      font-size: 2em;
+      display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 11px #00f1ff33;
+      transition: background 0.17s, border 0.14s, color 0.14s;
+      user-select: none;
+      touch-action: manipulation;
+      opacity: 0.93;
+    }
+    .mobile-btn:active, .mobile-btn.mobile-active {
+      background: #00f1ff;
+      color: #191f2a;
+      border-color: #ffe900;
+      opacity: 1;
+    }
+    #mobile-btn-left { left: 7vw; bottom: 28px; }
+    #mobile-btn-right { left: 23vw; bottom: 28px; }
+    #mobile-btn-jump { right: 12vw; bottom: 28px; }
+    #mobile-btn-up { left: 15vw; bottom: 90px; width: 50px; height: 50px; font-size: 1.5em;}
+    #mobile-btn-down { left: 15vw; bottom: -12px; width: 50px; height: 50px; font-size: 1.5em;}
+    @media (pointer: coarse), (max-width: 700px) {
+      #mobile-controls { display: block; }
+      #hud-bar { top: 9px; left: 10px; font-size: .98em; }
+      .slide-menu-content { margin-top: 25px; margin-left: 5vw; padding-right: 2vw;}
+    }
+    /* --- END MOBILE CONTROLS --- */
     .slide-menu {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(18,22,30,0.97);
@@ -93,8 +136,6 @@
       box-shadow: 0 0 12px #ffe90055;
     }
     .close-slide-btn:hover { background: #00f1ff; color: #ffe900;}
-
-    /* Redesigned Shop Styles - Scrollable Version */
     .shop-container {
       display: flex;
       flex-direction: column;
@@ -241,7 +282,6 @@
       opacity: 0.7;
       cursor: not-allowed;
     }
-    /* --- Redesigned Levels Menu --- */
     .levels-container {
       display: flex;
       flex-direction: column;
@@ -357,6 +397,15 @@
       <span class="hud-label hud-level" id="level-ui">1</span>
       <button class="hud-btn" id="exit-btn">EXIT</button>
     </div>
+    <!-- MOBILE CONTROLS -->
+    <div id="mobile-controls">
+      <button class="mobile-btn" id="mobile-btn-left">&#8592;</button>
+      <button class="mobile-btn" id="mobile-btn-right">&#8594;</button>
+      <button class="mobile-btn" id="mobile-btn-jump">&#8679;</button>
+      <button class="mobile-btn" id="mobile-btn-up">&#8593;</button>
+      <button class="mobile-btn" id="mobile-btn-down">&#8595;</button>
+    </div>
+    <!-- END MOBILE CONTROLS -->
     <div id="slide-menu" class="slide-menu"><div class="slide-menu-content"></div></div>
     <audio id="sfx-jump" src="https://cdn.jsdelivr.net/gh/joshwcomeau/beatmachine@main/public/samples/Jump.wav"></audio>
     <audio id="sfx-coin" src="https://cdn.jsdelivr.net/gh/joshwcomeau/beatmachine@main/public/samples/Perc2.wav"></audio>
@@ -405,6 +454,7 @@
     const MOVE_ACC = 1.5, MOVE_DEC = 0.6, MAX_SPEED = 5.1;
     const MAX_FALL = 12;
     const KEYMAP = { 'ArrowLeft':'left','ArrowRight':'right','ArrowUp':'up','ArrowDown':'down','a':'left','d':'right','w':'up','s':'down',' ':'jump' };
+    // ------- PATCH: HARDER LEVELS GENERATION --------
     function makeEasyLevel() {
       let map = Array(MAP_H).fill().map(()=>Array(MAP_W).fill(0));
       for(let x=0;x<MAP_W;x++) map[MAP_H-1][x]=1;
@@ -413,6 +463,7 @@
       map[MAP_H-2][MAP_W-3]=3;
       return map;
     }
+    // Difficulty increases with n: more hazards, more gaps
     function makeFairLevel(n, seed) {
       let rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
       let map = Array(MAP_H).fill().map(()=>Array(MAP_W).fill(0));
@@ -431,20 +482,32 @@
         let p = path[2+Math.floor(rand()*(path.length-4))];
         if(map[p[1]-1][p[0]]===0) map[p[1]-1][p[0]]=2;
       }
-      let hazardCt = Math.floor(n/3);
+      // PATCH: More hazards as n increases
+      let hazardCt = Math.floor(n/3) + Math.floor(n/12);
       for(let i=0;i<hazardCt;i++) {
         let tries=0;
         while(tries++<10) {
           let tx=2+Math.floor(rand()*(MAP_W-4)),ty=3+Math.floor(rand()*(MAP_H-4));
-          if(map[ty][tx]===0 && !path.some(p=>(p[0]===tx&&p[1]===ty))) {map[ty][tx]=4;break;}
+          let allowPathHazard = n > 35 ? true : false;
+          if(map[ty][tx]===0 && (allowPathHazard || !path.some(p=>(p[0]===tx&&p[1]===ty)))) {map[ty][tx]=4;break;}
         }
       }
       if(n>5 && rand()<0.5) {
         let p = path[2+Math.floor(rand()*(path.length-6))];
         if(map[p[1]-1][p[0]]===0) map[p[1]-1][p[0]]=5;
       }
+      // PATCH: Remove some platforms for high levels (gaps)
+      if(n>15) {
+        let gaps = Math.floor(n/10);
+        for(let g=0;g<gaps;g++) {
+          let idx = 3 + Math.floor(rand() * (path.length-10));
+          let p = path[idx];
+          if(p && map[p[1]][p[0]]===1) map[p[1]][p[0]] = 0;
+        }
+      }
       return map;
     }
+    // ------- END PATCH -------
     let LEVELS = [];
     LEVELS.push(makeEasyLevel());
     for(let i=1;i<LEVELS_COUNT;i++) {
@@ -494,6 +557,10 @@
       hudBar.style.display = on ? 'flex' : 'none';
       running = on;
       if (on) resizeCanvas();
+      // MOBILE CONTROLS
+      if (isMobile()) {
+        document.getElementById('mobile-controls').style.display = on ? 'block' : 'none';
+      }
     }
     function showSlideMenu(innerHTML, shopMode = false, levelsMode = false) {
       slideContent.innerHTML = innerHTML + '<button class="close-slide-btn" onclick="showMainMenu()">&times;</button>';
@@ -520,9 +587,11 @@
         <button class="slide-btn" onclick="showLevelSelect()">Level Select</button>
         <button class="slide-btn" onclick="showShop()">Shop</button>
         <div style="margin-top:20px;color:#ffe900;">Move: ←/→/A/D | Jump: ↑/W/SPACE</div>
+        <div style="margin-top:7px;color:#85fff7;font-size:1.1em;">
+        Mobile: Use on-screen controls!
+        </div>
       `);
     }
-    // --- Redesigned Levels Menu ---
     function showLevelSelect(selectedLevel = null) {
       let lvls = '';
       for(let i=0;i<LEVELS_COUNT;i++) {
@@ -548,12 +617,10 @@
         </div>
       `, false, true);
     }
-    // --- Redesigned SHOP - HORIZONTALLY SCROLLABLE ---
     function showShop(activeTab = 'players') {
       function renderTabBtn(tab, label) {
         return `<button class="shop-tab-btn${activeTab===tab?' active':''}" onclick="showShop('${tab}')">${label}</button>`;
       }
-      // Players
       let playerCards = PLAYER_SKINS.map((skin,i)=>
         `<div class="shop-card${save.ownedPlayers.includes(i)?' owned':''}${save.selectedPlayer===i?' selected':''}">
           <div class="swatch player-swatch" style="background:${skin.color};"></div>
@@ -566,7 +633,6 @@
           }
         </div>`
       ).join('');
-      // Backgrounds
       let bgCards = BG_THEMES.map((bg,i)=>
         `<div class="shop-card${save.ownedBgs.includes(i)?' owned':''}${save.selectedBg===i?' selected':''}">
           <div class="swatch bg-swatch" style="background:linear-gradient(90deg,${bg.grad[0]},${bg.grad[1]});"></div>
@@ -579,7 +645,6 @@
           }
         </div>`
       ).join('');
-      // Abilities
       let abilityCards = ABILITIES.map((ab,i)=>
         `<div class="shop-card${save.abilities[ab.key]?' owned':''}">
           <div class="card-title" style="color:${save.abilities[ab.key]?'#00f1ff':'#ffe900'};">${ab.name}</div>
@@ -591,13 +656,11 @@
           }
         </div>`
       ).join('');
-
       let tabContent = {
         players: playerCards,
         backgrounds: bgCards,
         abilities: abilityCards
       }[activeTab];
-
       showSlideMenu(`
         <div class="shop-container">
           <div class="shop-header">
@@ -615,7 +678,6 @@
       `, true, false);
     }
     window.showShop = showShop;
-
     window.buyPlayer = function(i) {
       if(save.ownedPlayers.includes(i)) return;
       let cost = PLAYER_SKINS[i].price;
@@ -670,6 +732,10 @@
       hudBar.style.display = on ? 'flex' : 'none';
       running = on;
       if (on) resizeCanvas();
+      // MOBILE CONTROLS
+      if (isMobile()) {
+        document.getElementById('mobile-controls').style.display = on ? 'block' : 'none';
+      }
     }
     function resizeCanvas() {
       canvas.width = window.innerWidth;
@@ -755,6 +821,19 @@
       let jump = keys.jump || keys.up || keys.w || keys[' '];
       if(left && !right) player.facing = -1;
       if(right && !left) player.facing = 1;
+
+      // --- PATCH: JUMP EXPLOIT PREVENTION ---
+      // Don't allow jump if under the map (Y > map bottom) and not on ground
+      if (
+        save.abilities.jumpHigher &&
+        player.y > (MAP_H-1)*TILE + 30 &&
+        !player.onGround
+      ) {
+        // disables jump if under the map and not grounded
+        player.jumpsLeft = 0;
+      }
+      // --- END PATCH ---
+
       if(player.onGround) {
         if(left && !right) player.vx -= moveAccGround;
         else if(right && !left) player.vx += moveAccGround;
@@ -994,28 +1073,65 @@
       requestAnimationFrame(gameLoop);
     }
     requestAnimationFrame(gameLoop);
+    // ------- PATCH: SPACE TO RETRY/NEXT LEVEL --------
     window.addEventListener('keydown',e=>{
       if(state!=="playing") {
-        if(state==="win" && afterWinNextLevelNum && (e.key===" "||e.key==="Spacebar")) {
+        if(state==="win" && afterWinNextLevelNum && (e.key===" "||e.key==="Spacebar"||e.code==="Space")) {
           startTheGame(afterWinNextLevelNum);
         }
-        return;
+        if(state==="lose" && (e.key===" "||e.key==="Spacebar"||e.code==="Space")) {
+          startTheGame(currentLevel);
+        }
       }
-      let k=KEYMAP[e.key];
-      if(k) keys[k]=1;
-      if(e.key==="Escape" && state==="playing") showMainMenu();
+    });
+    // ------- END PATCH -------
+    window.addEventListener('keydown',e=>{
+      let mapped=KEYMAP[e.key];
+      if(mapped) keys[mapped]=true;
     });
     window.addEventListener('keyup',e=>{
-      let k=KEYMAP[e.key];
-      if(k) keys[k]=0;
+      let mapped=KEYMAP[e.key];
+      if(mapped) keys[mapped]=false;
     });
-    window.showMainMenu = showMainMenu;
-    window.showLevelSelect = showLevelSelect;
-    window.startTheGame = startTheGame;
-    updateMoneyUI();
-    showMainMenu();
-    window.focus();
-    window.addEventListener('touchmove',e=>{e.preventDefault();},{passive:false});
+
+    // --- PATCH: MOBILE CONTROLS ---
+    function isMobile() {
+      return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop|webOS|BlackBerry|Windows Phone/i.test(navigator.userAgent)
+        || (window.matchMedia && window.matchMedia("(pointer: coarse)").matches)
+        || (window.innerWidth < 720);
+    }
+    function setupMobileControls() {
+      const mobileControls = document.getElementById('mobile-controls');
+      if (!mobileControls) return;
+      // Helper to handle both mouse/touch
+      function onBtn(btnId, on, key) {
+        const btn = document.getElementById(btnId);
+        if(!btn) return;
+        // Touch
+        btn.addEventListener('touchstart', function(e){ e.preventDefault(); keys[key]=true; btn.classList.add('mobile-active'); }, {passive:false});
+        btn.addEventListener('touchend', function(e){ e.preventDefault(); keys[key]=false; btn.classList.remove('mobile-active'); }, {passive:false});
+        btn.addEventListener('touchcancel', function(e){ e.preventDefault(); keys[key]=false; btn.classList.remove('mobile-active'); }, {passive:false});
+        // Mouse for fallback
+        btn.addEventListener('mousedown', function(e){ e.preventDefault(); keys[key]=true; btn.classList.add('mobile-active'); });
+        btn.addEventListener('mouseup', function(e){ e.preventDefault(); keys[key]=false; btn.classList.remove('mobile-active'); });
+        btn.addEventListener('mouseleave', function(e){ keys[key]=false; btn.classList.remove('mobile-active'); });
+      }
+      onBtn('mobile-btn-left', true, 'left');
+      onBtn('mobile-btn-right', true, 'right');
+      onBtn('mobile-btn-jump', true, 'jump');
+      onBtn('mobile-btn-up', true, 'up');
+      onBtn('mobile-btn-down', true, 'down');
+    }
+    setupMobileControls();
+    // --- END PATCH MOBILE CONTROLS ---
+
+    // ------- PATCH: AUTO-GO TO HOMESCREEN ON LOAD --------
+    // Instead of starting on game, always show main menu on page load.
+    document.addEventListener('DOMContentLoaded', function(){
+      showMainMenu();
+    });
+    // ------- END PATCH -------
+
   </script>
 </body>
 </html>
