@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Neon Leap</title>
+  <title>Neon Leap Enhanced</title>
   <style>
     html, body { margin: 0; padding: 0; width: 100vw; height: 100vh; background: #13181f; overflow: hidden; }
     #game { position: fixed; left: 0; top: 0; width: 100vw; height: 100vh; background: linear-gradient(120deg, #10141c 70%, #111820 100%); z-index: 1; user-select: none; }
@@ -15,7 +15,7 @@
     .hud-money { color: #ffe900; }
     .hud-score { color: #00f1ff; }
     .hud-level { color: #85fff7; margin-left:8px;}
-    /* --- MOBILE CONTROLS --- */
+    .hud-timer { color: #ff6b9d; margin-left:8px; font-weight: bold;}
     #mobile-controls {
       display: none;
       position: fixed;
@@ -57,7 +57,6 @@
       #hud-bar { top: 9px; left: 10px; font-size: .98em; }
       .slide-menu-content { margin-top: 25px; margin-left: 5vw; padding-right: 2vw;}
     }
-    /* --- END MOBILE CONTROLS --- */
     .slide-menu {
       position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
       background: rgba(18,22,30,0.97);
@@ -376,6 +375,11 @@
       margin-top: 2px;
       text-shadow: 0 0 6px #ffe90099;
     }
+    .level-card .time-badge {
+      font-size: 0.7em;
+      color: #ff6b9d;
+      margin-top: 2px;
+    }
     @media (max-width: 900px) {
       .shop-container, .levels-container { max-width: 99vw; }
       .shop-section-row, .levels-scroll-row { gap: 11px; }
@@ -395,9 +399,9 @@
       <span class="hud-label hud-money">₳ <span id="money-amount">0</span></span>
       <span class="hud-label hud-score" id="score-ui">SCORE: 0</span>
       <span class="hud-label hud-level" id="level-ui">1</span>
+      <span class="hud-label hud-timer" id="timer-ui" style="display:none;">0.0s</span>
       <button class="hud-btn" id="exit-btn">EXIT</button>
     </div>
-    <!-- MOBILE CONTROLS -->
     <div id="mobile-controls">
       <button class="mobile-btn" id="mobile-btn-left">&#8592;</button>
       <button class="mobile-btn" id="mobile-btn-right">&#8594;</button>
@@ -405,7 +409,6 @@
       <button class="mobile-btn" id="mobile-btn-up">&#8593;</button>
       <button class="mobile-btn" id="mobile-btn-down">&#8595;</button>
     </div>
-    <!-- END MOBILE CONTROLS -->
     <div id="slide-menu" class="slide-menu"><div class="slide-menu-content"></div></div>
     <audio id="sfx-jump" src="https://cdn.jsdelivr.net/gh/joshwcomeau/beatmachine@main/public/samples/Jump.wav"></audio>
     <audio id="sfx-coin" src="https://cdn.jsdelivr.net/gh/joshwcomeau/beatmachine@main/public/samples/Perc2.wav"></audio>
@@ -413,12 +416,15 @@
     <audio id="sfx-goal" src="https://cdn.jsdelivr.net/gh/joshwcomeau/beatmachine@main/public/samples/Clap.wav"></audio>
   </div>
   <script>
-    // --- ABILITIES SYSTEM ---
     const ABILITIES = [
       {name:"Jump Higher", desc:"Jump is 20% higher", price:800, key:"jumpHigher"},
       {name:"Run Faster", desc:"Max speed is increased", price:1200, key:"runFaster"},
       {name:"Air Control+", desc:"Better control mid-air", price:1400, key:"airControl"},
-      {name:"Double Jump", desc:"Allows a second jump in air", price:2000, key:"doubleJump"}
+      {name:"Double Jump", desc:"Allows a second jump in air", price:2000, key:"doubleJump"},
+      {name:"Wall Jump", desc:"Jump off walls", price:2500, key:"wallJump"},
+      {name:"Dash", desc:"Quick dash (X key)", price:3000, key:"dash"},
+      {name:"Gravity Control", desc:"Hold Down to fall faster", price:3500, key:"gravityControl"},
+      {name:"Wall Slide", desc:"Slide down walls slowly", price:2800, key:"wallSlide"}
     ];
     const PLAYER_SKINS = [
       {name:"Classic Yellow", color:"#ffe900", price:0},
@@ -442,7 +448,7 @@
       {name:"Platinum Ice", grad:["#e2e8ef","#111820"], price:77777},
       {name:"Cyber Royal", grad:["#6a29db","#212b36"], price:99999}
     ];
-    const GAME_NAME = "Neon Leap";
+    const GAME_NAME = "Neon Leap Enhanced";
     const STUDIO = "LD STUDIOS";
     const LEVELS_COUNT = 100;
     const TILE = 36, MAP_W = 25, MAP_H = 15;
@@ -453,8 +459,14 @@
     const JUMP_BUFFER = 120;
     const MOVE_ACC = 1.5, MOVE_DEC = 0.6, MAX_SPEED = 5.1;
     const MAX_FALL = 12;
-    const KEYMAP = { 'ArrowLeft':'left','ArrowRight':'right','ArrowUp':'up','ArrowDown':'down','a':'left','d':'right','w':'up','s':'down',' ':'jump' };
-    // ------- PATCH: HARDER LEVELS GENERATION --------
+    const WALL_JUMP_X_VEL = 7;
+    const WALL_JUMP_Y_VEL = -10;
+    const DASH_SPEED = 12;
+    const DASH_DURATION = 180;
+    const DASH_COOLDOWN = 600;
+    const WALL_SLIDE_SPEED = 2;
+    const KEYMAP = { 'ArrowLeft':'left','ArrowRight':'right','ArrowUp':'up','ArrowDown':'down','a':'left','d':'right','w':'up','s':'down',' ':'jump','x':'dash' };
+
     function makeEasyLevel() {
       let map = Array(MAP_H).fill().map(()=>Array(MAP_W).fill(0));
       for(let x=0;x<MAP_W;x++) map[MAP_H-1][x]=1;
@@ -463,57 +475,88 @@
       map[MAP_H-2][MAP_W-3]=3;
       return map;
     }
-    // Difficulty increases with n: more hazards, more gaps
+
     function makeFairLevel(n, seed) {
       let rand = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
       let map = Array(MAP_H).fill().map(()=>Array(MAP_W).fill(0));
       for(let y=0;y<MAP_H;y++) map[y][0]=1,map[y][MAP_W-1]=1;
+      
+      let difficulty = Math.floor(n / 10);
       let path = [];
       let y = MAP_H-2;
+      
       for(let x=2;x<MAP_W-2;x++) {
         map[y][x]=1; path.push([x,y]);
-        let jumpUp = rand()<0.2 && y>4 && map[y-1][x-1]===1 && map[y-1][x-2]===1;
-        let jumpDown = rand()<0.31 && y<MAP_H-3;
+        let jumpUp = rand()<(0.2 + difficulty*0.05) && y>4 && map[y-1][x-1]===1 && map[y-1][x-2]===1;
+        let jumpDown = rand()<(0.31 + difficulty*0.04) && y<MAP_H-3;
         if(jumpUp) y -= 1; else if(jumpDown) y += 1;
       }
+      
       map[y-1][MAP_W-3]=3;
+      
       let coinCt = 4+Math.floor(n/3);
       for(let i=0;i<coinCt;i++) {
         let p = path[2+Math.floor(rand()*(path.length-4))];
         if(map[p[1]-1][p[0]]===0) map[p[1]-1][p[0]]=2;
       }
-      // PATCH: More hazards as n increases
-      let hazardCt = Math.floor(n/3) + Math.floor(n/12);
+      
+      let hazardCt = Math.floor(n/2.5) + Math.floor(n/8);
       for(let i=0;i<hazardCt;i++) {
         let tries=0;
         while(tries++<10) {
           let tx=2+Math.floor(rand()*(MAP_W-4)),ty=3+Math.floor(rand()*(MAP_H-4));
-          let allowPathHazard = n > 35 ? true : false;
-          if(map[ty][tx]===0 && (allowPathHazard || !path.some(p=>(p[0]===tx&&p[1]===ty)))) {map[ty][tx]=4;break;}
+          let allowPathHazard = n > 25;
+          if(map[ty][tx]===0 && (allowPathHazard || !path.some(p=>(p[0]===tx&&p[1]===ty)))) {
+            map[ty][tx]=4;
+            break;
+          }
         }
       }
-      if(n>5 && rand()<0.5) {
+      
+      if(n>5 && rand()<0.6) {
         let p = path[2+Math.floor(rand()*(path.length-6))];
         if(map[p[1]-1][p[0]]===0) map[p[1]-1][p[0]]=5;
       }
-      // PATCH: Remove some platforms for high levels (gaps)
+      
       if(n>15) {
-        let gaps = Math.floor(n/10);
+        let gaps = Math.floor(n/8) + (n > 50 ? Math.floor(n/20) : 0);
         for(let g=0;g<gaps;g++) {
           let idx = 3 + Math.floor(rand() * (path.length-10));
           let p = path[idx];
           if(p && map[p[1]][p[0]]===1) map[p[1]][p[0]] = 0;
         }
       }
+      
+      if(n>20 && rand()<0.4) {
+        for(let i=0;i<3+Math.floor(n/15);i++) {
+          let wx = 3 + Math.floor(rand()*(MAP_W-6));
+          let wy = 3 + Math.floor(rand()*(MAP_H-5));
+          let height = 2 + Math.floor(rand()*4);
+          for(let h=0;h<height && wy+h<MAP_H-1;h++) {
+            if(map[wy+h][wx]===0) map[wy+h][wx]=1;
+          }
+        }
+      }
+      
+      if(n>30 && rand()<0.3) {
+        let movingPlatCount = 1 + Math.floor(n/40);
+        for(let i=0;i<movingPlatCount;i++) {
+          let px = 4 + Math.floor(rand()*(MAP_W-8));
+          let py = 4 + Math.floor(rand()*(MAP_H-6));
+          if(map[py][px]===0) map[py][px]=6;
+        }
+      }
+      
       return map;
     }
-    // ------- END PATCH -------
+
     let LEVELS = [];
     LEVELS.push(makeEasyLevel());
     for(let i=1;i<LEVELS_COUNT;i++) {
       let seed = i*20003 + 1237;
       LEVELS.push(makeFairLevel(i, seed));
     }
+
     let save = {
       unlocked: 1,
       money: 0,
@@ -523,8 +566,10 @@
       selectedBg: 0,
       levelsRewarded: [],
       lastLevel: 0,
-      abilities: {}
+      abilities: {},
+      bestTimes: {}
     };
+
     if(localStorage.getItem('ld_neonleap_save')) {
       try {
         let s = JSON.parse(localStorage.getItem('ld_neonleap_save'));
@@ -532,10 +577,13 @@
         if(!save.levelsRewarded) save.levelsRewarded = [];
         if(typeof save.lastLevel !== "number") save.lastLevel = 0;
         if(!save.abilities) save.abilities = {};
+        if(!save.bestTimes) save.bestTimes = {};
       } catch{}
     }
+
     function saveProgress() { localStorage.setItem('ld_neonleap_save', JSON.stringify(save)); }
     function setUnlocked(n) { save.unlocked = Math.max(save.unlocked, n); saveProgress(); }
+    
     function addMoney(amount, levelIndex) {
       if (typeof levelIndex === "number") {
         if(save.levelsRewarded.includes(levelIndex)) return;
@@ -544,24 +592,31 @@
       } else { save.money += amount; }
       updateMoneyUI(); saveProgress();
     }
+    
     function updateMoneyUI() { document.getElementById('money-amount').textContent = save.money; }
     function playSFX(id, vol=1) { try { let sfx=document.getElementById(id); sfx.currentTime=0; sfx.volume=vol; sfx.play(); }catch{} }
+
     const canvas = document.getElementById('game-canvas');
     const hudBar = document.getElementById('hud-bar');
     const slideMenu = document.getElementById('slide-menu');
     const slideContent = slideMenu.querySelector('.slide-menu-content');
-    let gameStarted = false, running = false, state = "menu", lastMenu = "";
+    let gameStarted = false, running = false, state = "menu";
     let afterWinNextLevelNum = null;
+    let gameMode = "normal";
+    let timerUI = document.getElementById('timer-ui');
+    let startTime = 0;
+    let movingPlatforms = [];
+
     function setGameVisibility(on) {
       canvas.style.display = on ? 'block' : 'none';
       hudBar.style.display = on ? 'flex' : 'none';
       running = on;
       if (on) resizeCanvas();
-      // MOBILE CONTROLS
       if (isMobile()) {
         document.getElementById('mobile-controls').style.display = on ? 'block' : 'none';
       }
     }
+
     function showSlideMenu(innerHTML, shopMode = false, levelsMode = false) {
       slideContent.innerHTML = innerHTML + '<button class="close-slide-btn" onclick="showMainMenu()">&times;</button>';
       if(shopMode){
@@ -576,6 +631,7 @@
       }
       slideMenu.classList.add('active');
     }
+
     function showMainMenu() {
       state = "menu"; setGameVisibility(false);
       slideMenu.classList.remove('shop-active');
@@ -583,31 +639,36 @@
       showSlideMenu(`
         <div class="slide-title">${GAME_NAME}</div>
         <div style="color:#ffe900;margin-bottom:28px;">A Cyberpunk Parkour Platformer<br>by ${STUDIO}</div>
-        <button class="slide-btn" onclick="startTheGame()">START</button>
+        <button class="slide-btn" onclick="startNormalGame()">Normal Mode</button>
+        <button class="slide-btn" onclick="startTimeTrialGame()">⏱️ Time Trial Mode</button>
         <button class="slide-btn" onclick="showLevelSelect()">Level Select</button>
         <button class="slide-btn" onclick="showShop()">Shop</button>
-        <div style="margin-top:20px;color:#ffe900;">Move: ←/→/A/D | Jump: ↑/W/SPACE</div>
+        <div style="margin-top:20px;color:#ffe900;">Move: ←/→/A/D | Jump: ↑/W/SPACE | Dash: X</div>
         <div style="margin-top:7px;color:#85fff7;font-size:1.1em;">
-        Mobile: Use on-screen controls!
+        NEW: Wall Jump, Dash, Moving Platforms!
         </div>
       `);
     }
-    function showLevelSelect(selectedLevel = null) {
+
+    function showLevelSelect(selectedLevel = null, mode = "normal") {
       let lvls = '';
       for(let i=0;i<LEVELS_COUNT;i++) {
         let isLocked = (i+1) > save.unlocked;
         let isSelected = i === (selectedLevel !== null ? selectedLevel : (save.lastLevel||0));
         let hasReward = save.levelsRewarded && save.levelsRewarded.includes(i);
-        lvls += `<button class="level-card${isLocked ? ' locked' : ''}${isSelected ? ' selected' : ''}" onclick="if(!this.classList.contains('locked')){startTheGame(${i})}">
+        let bestTime = save.bestTimes[i];
+        let timeStr = bestTime ? `${(bestTime/1000).toFixed(1)}s` : '';
+        lvls += `<button class="level-card${isLocked ? ' locked' : ''}${isSelected ? ' selected' : ''}" onclick="if(!this.classList.contains('locked')){startTheGame(${i}, '${mode}')}">
           <div class="level-num">${i+1}</div>
           ${isLocked ? '<span class="lock">&#128274;</span>' : ''}
           ${hasReward && !isLocked ? '<span class="trophy">&#x1F3C6;</span>' : ''}
+          ${timeStr && !isLocked ? `<div class="time-badge">${timeStr}</div>` : ''}
         </button>`;
       }
       showSlideMenu(`
         <div class="levels-container">
           <div class="levels-header">
-            <div class="levels-header-title">LEVELS</div>
+            <div class="levels-header-title">LEVELS - ${mode.toUpperCase()}</div>
             <div style="font-size:1.13em;color:#ffe900;font-weight:bold;background:#191f2a;padding:7px 19px;border-radius:8px;box-shadow:0 0 7px #ffe90055;">
               Unlocked: <span style="color:#00f1ff;">${save.unlocked}</span> / ${LEVELS_COUNT}
             </div>
@@ -617,6 +678,7 @@
         </div>
       `, false, true);
     }
+
     function showShop(activeTab = 'players') {
       function renderTabBtn(tab, label) {
         return `<button class="shop-tab-btn${activeTab===tab?' active':''}" onclick="showShop('${tab}')">${label}</button>`;
@@ -677,6 +739,7 @@
         </div>
       `, true, false);
     }
+
     window.showShop = showShop;
     window.buyPlayer = function(i) {
       if(save.ownedPlayers.includes(i)) return;
@@ -721,34 +784,65 @@
         showShop('abilities');
       }
     }
+
     let currentLevel = save.lastLevel||0, score = 0, coins = 0, deaths = 0;
     let map = LEVELS[currentLevel], player, keys = {}, time=0;
     let lastJumpTime = 0, lastOnGroundTime = 0, jumpBufferTime = 0;
     let scoreUI = document.getElementById('score-ui');
     let levelUI = document.getElementById('level-ui');
     let exitBtn = document.getElementById('exit-btn');
-    function setGameVisibility(on) {
-      canvas.style.display = on ? 'block' : 'none';
-      hudBar.style.display = on ? 'flex' : 'none';
-      running = on;
-      if (on) resizeCanvas();
-      // MOBILE CONTROLS
-      if (isMobile()) {
-        document.getElementById('mobile-controls').style.display = on ? 'block' : 'none';
-      }
-    }
+
     function resizeCanvas() {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
     }
     window.addEventListener('resize', resizeCanvas);
-    function startTheGame(levelIdx=null) {
+
+    window.startNormalGame = function() {
+      gameMode = "normal";
+      startTheGame();
+    }
+
+    window.startTimeTrialGame = function() {
+      gameMode = "timetrial";
+      showLevelSelect(null, "timetrial");
+    }
+
+    function startTheGame(levelIdx=null, mode=null) {
+      if(mode) gameMode = mode;
       gameStarted = true;
       setGameVisibility(true);
       slideMenu.classList.remove('active');
       let n = (typeof levelIdx === "number") ? levelIdx : (save.lastLevel||0);
       startLevel(n);
     }
+
+    function initMovingPlatforms(mapData) {
+      movingPlatforms = [];
+      for(let y=0;y<MAP_H;y++) {
+        for(let x=0;x<MAP_W;x++) {
+          if(mapData[y][x]===6) {
+            movingPlatforms.push({
+              startX: x*TILE,
+              x: x*TILE,
+              y: y*TILE,
+              vx: 2,
+              range: TILE*3
+            });
+          }
+        }
+      }
+    }
+
+    function updateMovingPlatforms() {
+      movingPlatforms.forEach(plat => {
+        plat.x += plat.vx;
+        if(Math.abs(plat.x - plat.startX) > plat.range) {
+          plat.vx *= -1;
+        }
+      });
+    }
+
     function startLevel(n) {
       currentLevel = n;
       save.lastLevel = n; saveProgress();
@@ -762,24 +856,43 @@
       exitBtn.style.display="inline-block";
       time = 0;
       afterWinNextLevelNum = null;
+      
+      if(gameMode === "timetrial") {
+        startTime = performance.now();
+        timerUI.style.display = 'inline';
+      } else {
+        timerUI.style.display = 'none';
+      }
+      
+      initMovingPlatforms(map);
       render();
     }
+
     exitBtn.onclick = function() { showMainMenu(); exitBtn.style.display="none"; };
+
     function updateUI() {
       score = Math.max(score, 0);
       scoreUI.textContent = "SCORE: " + score;
       levelUI.textContent = currentLevel+1;
       updateMoneyUI();
+      
+      if(gameMode === "timetrial" && state === "playing") {
+        let elapsed = (performance.now() - startTime) / 1000;
+        timerUI.textContent = elapsed.toFixed(1) + "s";
+      }
     }
+
     function startPosFor(map) {
       for(let y=0;y<MAP_H-1;y++)
         for(let x=1;x<MAP_W-1;x++)
           if(map[y][x]===1&&map[y-1][x]===0) return {x: x*TILE+6, y: (y-1)*TILE};
       return {x: 3*TILE+6, y: (MAP_H-5)*TILE};
     }
+
     function getAbilityValue(key, base, mod) {
       return save.abilities[key] ? base * mod : base;
     }
+
     function resetPlayer() {
       let pos = startPosFor(map);
       player = {
@@ -792,86 +905,162 @@
         facing: 1,
         eye: {x:0,y:0},
         canDoubleJump: save.abilities.doubleJump,
-        jumpsLeft: save.abilities.doubleJump ? 2 : 1
+        jumpsLeft: save.abilities.doubleJump ? 2 : 1,
+        onWall: false,
+        wallDir: 0,
+        isDashing: false,
+        dashTime: 0,
+        lastDashTime: -99999,
+        onMovingPlatform: null
       };
     }
+
     function solidAt(px,py) {
       let tx=Math.floor(px/TILE),ty=Math.floor(py/TILE);
       if(tx<0||ty<0||tx>=MAP_W||ty>=MAP_H) return 1;
       return map[ty][tx]===1;
     }
+
     function tileAt(px,py) {
       let tx=Math.floor(px/TILE),ty=Math.floor(py/TILE);
       if(tx<0||ty<0||tx>=MAP_W||ty>=MAP_H) return 1;
       return map[ty][tx];
     }
+
     function setTile(px,py,v) {
       let tx=Math.floor(px/TILE),ty=Math.floor(py/TILE);
       if(tx>=0&&ty>=0&&tx<MAP_W&&ty<MAP_H) map[ty][tx]=v;
     }
+
+    function checkMovingPlatformCollision(px, py, pw, ph) {
+      for(let plat of movingPlatforms) {
+        if(px + pw > plat.x && px < plat.x + TILE &&
+           py + ph > plat.y && py < plat.y + TILE) {
+          return plat;
+        }
+      }
+      return null;
+    }
+
     function stepPlayer() {
       if(!player.alive) return;
+      
       let jumpVel = getAbilityValue("jumpHigher", JUMP_VELOCITY, 1.20);
       let maxSpeed = getAbilityValue("runFaster", MAX_SPEED, 1.25);
       let moveAcc = getAbilityValue("airControl", MOVE_ACC, 1.22);
       let moveAccGround = MOVE_ACC;
       let airControl = save.abilities.airControl ? 0.8 : 0.6;
+      
       let left = keys.left || keys.a;
       let right = keys.right || keys.d;
       let jump = keys.jump || keys.up || keys.w || keys[' '];
+      let down = keys.down || keys.s;
+      let dash = keys.dash || keys.x;
+
       if(left && !right) player.facing = -1;
       if(right && !left) player.facing = 1;
 
-      // --- PATCH: JUMP EXPLOIT PREVENTION ---
-      // Don't allow jump if under the map (Y > map bottom) and not on ground
-      if (
-        save.abilities.jumpHigher &&
-        player.y > (MAP_H-1)*TILE + 30 &&
-        !player.onGround
-      ) {
-        // disables jump if under the map and not grounded
-        player.jumpsLeft = 0;
-      }
-      // --- END PATCH ---
-
-      if(player.onGround) {
-        if(left && !right) player.vx -= moveAccGround;
-        else if(right && !left) player.vx += moveAccGround;
-        else player.vx *= MOVE_DEC;
-      } else {
-        if(left && !right) player.vx -= moveAcc * airControl;
-        else if(right && !left) player.vx += moveAcc * airControl;
-        else player.vx *= MOVE_DEC;
-      }
-      player.vx = Math.max(-maxSpeed, Math.min(maxSpeed, player.vx));
-      if(Math.abs(player.vx)<0.2) player.vx = 0;
-      player.vy += GRAVITY;
-      if(player.vy > MAX_FALL) player.vy = MAX_FALL;
       let now = performance.now();
+      
+      if(dash && save.abilities.dash && !player.isDashing && now - player.lastDashTime > DASH_COOLDOWN) {
+        player.isDashing = true;
+        player.dashTime = now;
+        player.lastDashTime = now;
+        player.vx = player.facing * DASH_SPEED;
+        player.vy = 0;
+      }
+
+      if(player.isDashing) {
+        if(now - player.dashTime > DASH_DURATION) {
+          player.isDashing = false;
+        }
+      }
+
+      if(!player.isDashing) {
+        if(player.onGround) {
+          if(left && !right) player.vx -= moveAccGround;
+          else if(right && !left) player.vx += moveAccGround;
+          else player.vx *= MOVE_DEC;
+        } else {
+          if(left && !right) player.vx -= moveAcc * airControl;
+          else if(right && !left) player.vx += moveAcc * airControl;
+          else player.vx *= MOVE_DEC;
+        }
+        player.vx = Math.max(-maxSpeed, Math.min(maxSpeed, player.vx));
+        if(Math.abs(player.vx)<0.2) player.vx = 0;
+        
+        let gravityMod = 1;
+        if(save.abilities.gravityControl && down && !player.onGround) {
+          gravityMod = 2;
+        }
+        
+        if(save.abilities.wallSlide && player.onWall && !player.onGround && player.vy > 0) {
+          player.vy = Math.min(player.vy, WALL_SLIDE_SPEED);
+        } else {
+          player.vy += GRAVITY * gravityMod;
+        }
+        
+        if(player.vy > MAX_FALL) player.vy = MAX_FALL;
+      }
+
       let wasOnGround = player.onGround;
       player.onGround = false;
+      player.onWall = false;
+      player.wallDir = 0;
+      player.onMovingPlatform = null;
+
       player.x += player.vx;
+      
       if(player.vx > 0 && (solidAt(player.x+player.w,player.y+2) || solidAt(player.x+player.w,player.y+player.h-2))) {
         player.x = Math.floor((player.x+player.w)/TILE)*TILE-player.w-0.01;
         player.vx = 0;
+        if(save.abilities.wallJump || save.abilities.wallSlide) {
+          player.onWall = true;
+          player.wallDir = 1;
+        }
       } else if(player.vx < 0 && (solidAt(player.x,player.y+2) || solidAt(player.x,player.y+player.h-2))) {
         player.x = Math.ceil((player.x)/TILE)*TILE+0.01;
         player.vx = 0;
+        if(save.abilities.wallJump || save.abilities.wallSlide) {
+          player.onWall = true;
+          player.wallDir = -1;
+        }
       }
+
       player.y += player.vy;
-      if(player.vy > 0 && (solidAt(player.x+2,player.y+player.h) || solidAt(player.x+player.w-2,player.y+player.h))) {
-        player.y = Math.floor((player.y+player.h)/TILE)*TILE-player.h-0.01;
-        player.vy = 0;
-        player.onGround = true;
-        lastOnGroundTime = now;
-        player.jumpsLeft = save.abilities.doubleJump ? 2 : 1;
+      
+      if(player.vy > 0) {
+        let groundHit = solidAt(player.x+2,player.y+player.h) || solidAt(player.x+player.w-2,player.y+player.h);
+        let platHit = checkMovingPlatformCollision(player.x, player.y, player.w, player.h);
+        
+        if(groundHit) {
+          player.y = Math.floor((player.y+player.h)/TILE)*TILE-player.h-0.01;
+          player.vy = 0;
+          player.onGround = true;
+          lastOnGroundTime = now;
+          player.jumpsLeft = save.abilities.doubleJump ? 2 : 1;
+        } else if(platHit && player.vy > 0 && player.y + player.h - player.vy <= platHit.y) {
+          player.y = platHit.y - player.h;
+          player.vy = 0;
+          player.onGround = true;
+          player.onMovingPlatform = platHit;
+          lastOnGroundTime = now;
+          player.jumpsLeft = save.abilities.doubleJump ? 2 : 1;
+        }
       }
+      
       if(player.vy < 0 && (solidAt(player.x+2,player.y) || solidAt(player.x+player.w-2,player.y))) {
         player.y = Math.ceil((player.y)/TILE)*TILE+0.01;
         player.vy = 0;
       }
+
+      if(player.onMovingPlatform) {
+        player.x += player.onMovingPlatform.vx;
+      }
+
       player.x = Math.max(0,Math.min(player.x,MAP_W*TILE-player.w));
       if(player.y>MAP_H*TILE+100) { player.alive=false; playSFX('sfx-death'); setTimeout(loseLevel,100); }
+
       if(jump) player.jumpHeld = true;
       else player.jumpHeld = false;
       if(jump && !player.jumpBuffered) {
@@ -879,6 +1068,7 @@
         jumpBufferTime = now;
       }
       if(!jump) player.jumpBuffered = false;
+
       if(player.jumpHeld && (player.onGround || now - lastOnGroundTime < COYOTE_TIME) && now - lastJumpTime > JUMP_COOLDOWN && now - jumpBufferTime < JUMP_BUFFER) {
         player.vy = jumpVel;
         player.onGround = false;
@@ -886,31 +1076,44 @@
         jumpBufferTime = -99999;
         playSFX('sfx-jump',.8);
         player.jumpsLeft = save.abilities.doubleJump ? 1 : 0;
-      } else if(player.jumpHeld && save.abilities.doubleJump && !player.onGround && player.jumpsLeft > 0 && now - lastJumpTime > JUMP_COOLDOWN) {
+      } else if(player.jumpHeld && save.abilities.wallJump && player.onWall && now - lastJumpTime > JUMP_COOLDOWN) {
+        player.vy = WALL_JUMP_Y_VEL;
+        player.vx = -player.wallDir * WALL_JUMP_X_VEL;
+        player.onWall = false;
+        lastJumpTime = now;
+        playSFX('sfx-jump',.7);
+      } else if(player.jumpHeld && save.abilities.doubleJump && !player.onGround && !player.onWall && player.jumpsLeft > 0 && now - lastJumpTime > JUMP_COOLDOWN) {
         player.vy = jumpVel;
         player.jumpsLeft--;
         lastJumpTime = now;
         playSFX('sfx-jump',.7);
       }
+
       if(!jump && player.vy < 0) player.vy *= 0.65;
+
       let eyex = player.facing * 3 + Math.max(-2, Math.min(2, Math.round(player.vx/2)));
       let eyey = player.vy < -2 ? -2 : (player.vy > 2 ? 2 : 0);
       player.eye.x = eyex; player.eye.y = eyey;
+
       if(tileAt(player.x+player.w/2,player.y+player.h/2)===2) {
         setTile(player.x+player.w/2,player.y+player.h/2,0);
         score = Math.max(0,score+50); coins++; player.coins++;
         playSFX('sfx-coin',0.5);
       }
+
       if(tileAt(player.x+player.w/2,player.y+player.h+4)===5) {
         player.vy = jumpVel*1.25;
       }
+
       if(tileAt(player.x+player.w/2,player.y+player.h/2)===3) {
         player.alive = false; setTimeout(winLevel,120);
       }
+
       if(tileAt(player.x+player.w/2,player.y+player.h/2)===4) {
         player.alive = false; playSFX('sfx-death',0.7); setTimeout(loseLevel,100);
       }
     }
+
     function drawTile(ctx, tx, ty, tile) {
       const x=tx*TILE, y=ty*TILE;
       switch(tile) {
@@ -965,6 +1168,7 @@
           break;
       }
     }
+
     function render() {
       const ctx = canvas.getContext("2d");
       resizeCanvas();
@@ -973,13 +1177,16 @@
       let grad=ctx.createLinearGradient(0,0,canvas.width,canvas.height);
       grad.addColorStop(0,theme.grad[0]); grad.addColorStop(1,theme.grad[1]);
       ctx.fillStyle=grad; ctx.fillRect(0,0,canvas.width,canvas.height);
+      
       const gridW = MAP_W, gridH = MAP_H;
       const scale = Math.min(canvas.width / (gridW * TILE), canvas.height / (gridH * TILE));
       const offsetX = (canvas.width - gridW * TILE * scale) / 2;
       const offsetY = (canvas.height - gridH * TILE * scale) / 2;
+      
       ctx.save();
       ctx.translate(offsetX, offsetY);
       ctx.scale(scale, scale);
+      
       ctx.save();
       ctx.globalAlpha=0.14;
       ctx.strokeStyle="#00f1ff";
@@ -995,23 +1202,49 @@
       }
       ctx.globalAlpha=1.0;
       ctx.restore();
+
       for(let y=0;y<MAP_H;y++)
         for(let x=0;x<MAP_W;x++) {
           let tile=map[y][x];
-          if(tile) drawTile(ctx,x,y,tile);
+          if(tile && tile !== 6) drawTile(ctx,x,y,tile);
         }
+
+      movingPlatforms.forEach(plat => {
+        ctx.save();
+        ctx.shadowColor="#ff6b9d";ctx.shadowBlur=12;
+        ctx.fillStyle="#23272b";
+        ctx.fillRect(plat.x+2, plat.y+2, TILE-4, TILE-4);
+        ctx.strokeStyle="#ff6b9d";
+        ctx.lineWidth=2.5;
+        ctx.strokeRect(plat.x+4, plat.y+4, TILE-8, TILE-8);
+        ctx.restore();
+      });
+
       let px=player.x, py=player.y;
+      
+      if(player.isDashing) {
+        ctx.save();
+        ctx.globalAlpha = 0.3;
+        for(let i=0;i<3;i++) {
+          ctx.fillStyle=player.color;
+          ctx.fillRect(px+5-i*8, py+8, player.w-10, player.h-14);
+        }
+        ctx.restore();
+      }
+
       ctx.save();
       ctx.shadowColor=player.color; ctx.shadowBlur=18;
       ctx.fillStyle=player.color;
       ctx.fillRect(px+5,py+8,player.w-10,player.h-14);
       ctx.restore();
+      
       ctx.save();
       ctx.beginPath();
       ctx.arc(px+player.w/2, py+13, 12, 0, 2*Math.PI);
       ctx.fillStyle=player.color; ctx.shadowColor="#fff"; ctx.shadowBlur=7;
       ctx.fill();
       ctx.restore();
+      
       ctx.save();
       ctx.beginPath();
       ctx.arc(px+player.w/2-5+player.eye.x, py+13+player.eye.y, 3.2, 0, 2*Math.PI);
@@ -1021,6 +1254,7 @@
       ctx.shadowBlur=0;
       ctx.fill();
       ctx.restore();
+      
       ctx.save();
       ctx.beginPath();
       ctx.arc(px+player.w/2-4.5+player.eye.x, py+12.5+player.eye.y, 1, 0, 2*Math.PI);
@@ -1029,62 +1263,83 @@
       ctx.globalAlpha=0.6;
       ctx.fill();
       ctx.restore();
+      
       ctx.restore();
       updateUI();
     }
+
     function winLevel() {
+      let elapsedTime = gameMode === "timetrial" ? (performance.now() - startTime) : 0;
       let reward = 100 + Math.floor(currentLevel*2.5);
       score = Math.max(0, Math.floor(score + 500 + coins*30 - time*2));
       setUnlocked(currentLevel+2);
       addMoney(reward, currentLevel);
       playSFX('sfx-goal');
       afterWinNextLevelNum = currentLevel+1;
+      
+      let timeMsg = '';
+      if(gameMode === "timetrial") {
+        let bestTime = save.bestTimes[currentLevel];
+        let isNewRecord = !bestTime || elapsedTime < bestTime;
+        if(isNewRecord) {
+          save.bestTimes[currentLevel] = elapsedTime;
+          saveProgress();
+          timeMsg = `<div style="color:#ff6b9d;margin-bottom:10px;">🏆 NEW RECORD: ${(elapsedTime/1000).toFixed(2)}s!</div>`;
+        } else {
+          timeMsg = `<div style="color:#85fff7;margin-bottom:10px;">Time: ${(elapsedTime/1000).toFixed(2)}s (Best: ${(bestTime/1000).toFixed(2)}s)</div>`;
+        }
+      }
+      
       showSlideMenu(`
         <div class="slide-title">LEVEL ${currentLevel+1} COMPLETE!</div>
+        ${timeMsg}
         <div style="color:#ffe900;margin-bottom:18px;">Score: ${score} <br> ${save.levelsRewarded.includes(currentLevel) ? "+₳"+reward : "(Already rewarded)"}</div>
-        <button class="slide-btn" onclick="startTheGame(${currentLevel+1})" id="next-level-btn">NEXT LEVEL (SPACE)</button>
-        <button class="slide-btn" onclick="showLevelSelect()">Level Select</button>
+        <button class="slide-btn" onclick="startTheGame(${currentLevel+1}, '${gameMode}')" id="next-level-btn">NEXT LEVEL (SPACE)</button>
+        <button class="slide-btn" onclick="showLevelSelect(null, '${gameMode}')">Level Select</button>
         <button class="slide-btn" onclick="showShop()">Shop</button>
         <div style="font-size:.93em;margin-top:14px;color:#85fff7;">Tip: Press SPACE for next level</div>
       `);
       exitBtn.style.display="none";
       state = "win";
     }
+
     function loseLevel() {
       deaths++; playSFX('sfx-death');
       setTimeout(()=>{
         showSlideMenu(`
           <div class="slide-title">GAME OVER</div>
           <div style="color:#ffe900;margin-bottom:15px;">Try Again?</div>
-          <button class="slide-btn" onclick="startTheGame(${currentLevel})">RETRY</button>
-          <button class="slide-btn" onclick="showLevelSelect()">Level Select</button>
+          <button class="slide-btn" onclick="startTheGame(${currentLevel}, '${gameMode}')">RETRY (SPACE)</button>
+          <button class="slide-btn" onclick="showLevelSelect(null, '${gameMode}')">Level Select</button>
           <button class="slide-btn" onclick="showShop()">Shop</button>
         `);
         exitBtn.style.display="none";
         state = "lose";
       }, 200);
     }
+
     function gameLoop() {
       if(running && state==="playing") {
         time++;
+        updateMovingPlatforms();
         stepPlayer();
         render();
       }
       requestAnimationFrame(gameLoop);
     }
     requestAnimationFrame(gameLoop);
-    // ------- PATCH: SPACE TO RETRY/NEXT LEVEL --------
+
     window.addEventListener('keydown',e=>{
       if(state!=="playing") {
         if(state==="win" && afterWinNextLevelNum && (e.key===" "||e.key==="Spacebar"||e.code==="Space")) {
-          startTheGame(afterWinNextLevelNum);
+          startTheGame(afterWinNextLevelNum, gameMode);
         }
         if(state==="lose" && (e.key===" "||e.key==="Spacebar"||e.code==="Space")) {
-          startTheGame(currentLevel);
+          startTheGame(currentLevel, gameMode);
         }
       }
     });
-    // ------- END PATCH -------
+
     window.addEventListener('keydown',e=>{
       let mapped=KEYMAP[e.key];
       if(mapped) keys[mapped]=true;
@@ -1094,24 +1349,21 @@
       if(mapped) keys[mapped]=false;
     });
 
-    // --- PATCH: MOBILE CONTROLS ---
     function isMobile() {
       return /Android|iPhone|iPad|iPod|Opera Mini|IEMobile|WPDesktop|webOS|BlackBerry|Windows Phone/i.test(navigator.userAgent)
         || (window.matchMedia && window.matchMedia("(pointer: coarse)").matches)
         || (window.innerWidth < 720);
     }
+
     function setupMobileControls() {
       const mobileControls = document.getElementById('mobile-controls');
       if (!mobileControls) return;
-      // Helper to handle both mouse/touch
       function onBtn(btnId, on, key) {
         const btn = document.getElementById(btnId);
         if(!btn) return;
-        // Touch
         btn.addEventListener('touchstart', function(e){ e.preventDefault(); keys[key]=true; btn.classList.add('mobile-active'); }, {passive:false});
         btn.addEventListener('touchend', function(e){ e.preventDefault(); keys[key]=false; btn.classList.remove('mobile-active'); }, {passive:false});
         btn.addEventListener('touchcancel', function(e){ e.preventDefault(); keys[key]=false; btn.classList.remove('mobile-active'); }, {passive:false});
-        // Mouse for fallback
         btn.addEventListener('mousedown', function(e){ e.preventDefault(); keys[key]=true; btn.classList.add('mobile-active'); });
         btn.addEventListener('mouseup', function(e){ e.preventDefault(); keys[key]=false; btn.classList.remove('mobile-active'); });
         btn.addEventListener('mouseleave', function(e){ keys[key]=false; btn.classList.remove('mobile-active'); });
@@ -1123,15 +1375,10 @@
       onBtn('mobile-btn-down', true, 'down');
     }
     setupMobileControls();
-    // --- END PATCH MOBILE CONTROLS ---
 
-    // ------- PATCH: AUTO-GO TO HOMESCREEN ON LOAD --------
-    // Instead of starting on game, always show main menu on page load.
     document.addEventListener('DOMContentLoaded', function(){
       showMainMenu();
     });
-    // ------- END PATCH -------
-
   </script>
 </body>
 </html>
