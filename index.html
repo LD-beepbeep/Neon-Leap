@@ -1826,8 +1826,14 @@ var MP = {
 
 
 const DAILY_DEFS=[{id:0,n:"Coin Collector",d:"Collect 50 coins today",goal:50,r:500,stat:"coins",ic:"🪙"},{id:1,n:"Level Master",d:"Complete 5 levels today",goal:5,r:800,stat:"levels",ic:"🏆"},{id:2,n:"Death Defier",d:"Die 10 times today",goal:10,r:300,stat:"deaths",ic:"💀"},{id:3,n:"Speed Demon",d:"Dash 20 times today",goal:20,r:400,stat:"dashes",ic:"⚡"},{id:4,n:"High Jumper",d:"Jump 100 times today",goal:100,r:400,stat:"jumps",ic:"🐇"}];
-const checkDaily=()=>{let t=new Date().toDateString();if(Save.daily.date!==t){Save.daily.date=t;let i=[];while(i.length<2){let r=Math.floor(Math.random()*DAILY_DEFS.length);if(i.indexOf(r)===-1)i.push(r);}Save.daily.tasks=i.map(id=>({id:id,p:0,c:false}));save();}};checkDaily();
-if(Save.light)document.body.classList.add('light-mode');
+
+const checkDaily=()=>{let t=new Date().toDateString();if(Save.daily.date!==t){Save.daily.date=t;let i=[];while(i.length<2){let r=Math.floor(Math.random()*DAILY_DEFS.length);if(i.indexOf(r)===-1)i.push(r);}Save.daily.tasks=i.map(id=>({id:id,p:0,c:false}));save();}};
+
+// NEW FIX: Wait until the whole file loads before checking Save!
+document.addEventListener('DOMContentLoaded', () => {
+    checkDaily(); // Call it safely here
+    if(Save.light) document.body.classList.add('light-mode');
+});
 
 DB.skins.sort((a,b)=>a.p-b.p);
 DB.upgrades.sort((a,b)=>a.p-b.p);
