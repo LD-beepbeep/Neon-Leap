@@ -548,7 +548,7 @@ var Auth = {
     const errEl = document.getElementById('username-error');
     if (name.length < 2) { errEl.textContent = 'Min 2 characters.'; return; }
     if (!/^[a-zA-Z0-9_]+$/.test(name)) { errEl.textContent = 'Letters/numbers/underscore only.'; return; }
-    const { error } = await _supa.rpc('create_profile', { p_username: name });
+    const { error } = await _supa.rpc('create_profile', { p_user_id: this.user.id, p_username: name });
     if (error) { errEl.textContent = error.message.includes('unique') ? 'Username taken.' : error.message; return; }
     await this._loadProfile();
     document.getElementById('username-setup').classList.remove('show');
