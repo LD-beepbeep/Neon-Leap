@@ -463,30 +463,7 @@
   .settings-vol span{font-family:monospace;color:var(--c-primary);min-width:32px;text-align:right;}
 
 
-  /* ── Sign-in card ── */
-  .signin-card{
-    width:100%;max-width:580px;
-    background:linear-gradient(135deg,rgba(0,241,255,.06),rgba(160,32,240,.06));
-    border:1px solid rgba(0,241,255,.25);border-radius:10px;
-    padding:22px 28px;display:flex;align-items:center;gap:20px;
-    margin-bottom:22px;cursor:pointer;transition:.2s;position:relative;overflow:hidden;
-  }
-  .signin-card::before{
-    content:'';position:absolute;inset:0;
-    background:linear-gradient(90deg,transparent,rgba(0,241,255,.04),transparent);
-    transform:translateX(-100%);transition:.6s;
-  }
-  .signin-card:hover::before{transform:translateX(100%);}
-  .signin-card:hover{border-color:var(--c-primary);transform:translateY(-2px);box-shadow:0 8px 30px rgba(0,241,255,.15);}
-  .signin-card-icon{font-size:2.2rem;color:var(--c-primary);flex-shrink:0;width:50px;text-align:center;}
-  .signin-card-body{flex:1;text-align:left;}
-  .signin-card-title{font-size:1.2rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;}
-  body.light-mode .signin-card-title{color:#222;}
-  .signin-card-perks{display:flex;gap:12px;flex-wrap:wrap;}
-  .signin-perk{display:flex;align-items:center;gap:5px;font-size:.78rem;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:.5px;}
-  .signin-perk i{color:var(--c-primary);font-size:.7rem;}
-  .signin-card-arrow{color:#333;font-size:1.2rem;flex-shrink:0;}
-  .signin-card:hover .signin-card-arrow{color:var(--c-primary);}
+  
 
   /* ── MP redesign ── */
   #mp-lobby{
@@ -663,7 +640,7 @@
     <div class="hud-pause" onclick="Game.togglePause()"><i class="fas fa-pause"></i></div>
     <div id="hud-lvl-lb-btn" onclick="Game.openLvlLb(Save.level)"><i class="fas fa-ellipsis"></i></div>
     
-    <!-- SKIP BUTTON (Moved to Top Center) -->
+    
     <div id="hud-skip" onclick="Game.skipLevel()">SKIP LEVEL &gt;&gt;</div>
     
     <div id="start-overlay">GO!</div>
@@ -712,7 +689,7 @@
       <div class="mp-panel-icon"><i class="fas fa-bolt"></i></div>
       <div><div class="mp-panel-title">MULTIPLAYER</div><div class="mp-panel-sub">Endless survival with friends</div></div>
     </div>
-    <!-- Create/Join screen -->
+    
     <div id="mp-create-screen">
       <div class="mp-panel-body">
         <button class="btn btn-primary" onclick="MP.createRoom()" style="width:100%;margin:0 0 4px;min-width:0;"><i class="fas fa-plus"></i> CREATE ROOM</button>
@@ -724,7 +701,7 @@
         <button class="btn" onclick="MP.closeLobby()" style="width:100%;margin:0;min-width:0;padding:14px;"><i class="fas fa-xmark"></i> CANCEL</button>
       </div>
     </div>
-    <!-- Waiting room screen -->
+    
     <div id="mp-waiting-screen" style="display:none;">
       <div class="mp-panel-body">
         <div class="mp-room-header">
@@ -740,7 +717,7 @@
           </div>
         </div>
         <div id="mp-players-list"></div>
-        <!-- Chat -->
+        
         <div class="mp-chat" id="mp-chat"></div>
         <div class="mp-chat-row">
           <input type="text" id="mp-chat-input" class="mp-chat-input" placeholder="Say something..." maxlength="80" onkeydown="if(event.key==='Enter')MP.sendChat()"/>
@@ -754,9 +731,9 @@
     </div>
   </div>
 </div>
-<!-- MP countdown overlay -->
+
 <div id="mp-countdown"><div class="mp-countdown-num" id="mp-countdown-num">3</div></div>
-<!-- MP in-game HUD -->
+
 <div id="mp-hud"><div class="mp-hud-title"><i class="fas fa-users"></i> PLAYERS</div><div id="mp-hud-players"></div></div>
 
 <div class="toast" id="toast"></div>
@@ -764,16 +741,12 @@
 </div>
 <script>
 
-// =========================================================
-// NEON LEAP — ONLINE FEATURES (Supabase)
-// =========================================================
 const SUPABASE_URL  = 'https://qxzjhkjimblpkskijvhi.supabase.co';
 const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF4empoa2ppbWJscGtza2lqdmhpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQwNzkyMTQsImV4cCI6MjA4OTY1NTIxNH0.T13cN61uSysY9M9SBKiUnpXRA4roaYTLIcWiTMhhIx8';
 
 var _supa = null;
 try { _supa = supabase.createClient(SUPABASE_URL, SUPABASE_ANON); } catch(e) { console.warn('Supabase failed to init', e); }
 
-// ── AUTH ──────────────────────────────────────────────────
 var Auth = {
   user: null, profile: null, _tab: 'login',
   async init() {
@@ -844,7 +817,7 @@ var Auth = {
       if (res.error) {
         errEl.textContent = this._friendlyError(res.error.message);
       } else if (this._tab === 'register' && res.data?.user && !res.data?.session) {
-        // Email confirmation is ON — session won't exist yet
+
         errEl.style.color = 'var(--c-success)';
         errEl.textContent = 'Account created! Check your inbox for a confirmation link, then log in.';
       } else {
@@ -874,7 +847,7 @@ var Auth = {
   _afterLogin() {
     document.getElementById('auth-overlay').classList.remove('show');
     document.getElementById('username-setup').classList.remove('show');
-    CloudSave.syncOnLogin(); // also calls DailySync.load + Achievements.init
+    CloudSave.syncOnLogin();Friends.load(); 
     if (typeof Game !== 'undefined') Game.renderMain();
   },
   async logout() {
@@ -887,7 +860,6 @@ var Auth = {
   isLoggedIn()  { return !!(this.user && this.profile); }
 };
 
-// ── CLOUD SAVE ────────────────────────────────────────────
 var CloudSave = {
   _timer: null,
   async syncOnLogin() {
@@ -932,7 +904,6 @@ var CloudSave = {
   }
 };
 
-// ── LEADERBOARD ───────────────────────────────────────────
 var LB = {
   async submitEndless(score) {
     if (!_supa || !Auth.isLoggedIn() || score < 5) return;
@@ -968,19 +939,18 @@ var LB = {
   }
 };
 
-// ── GHOST RUNS ────────────────────────────────────────────
 var Ghost = {
-  frames: [],       // recorded this run: [[x,y], ...]
-  replay: [],       // loaded from DB: [[x,y], ...]
+  frames: [],       
+  replay: [],       
   replayName: '',
   replayScore: 0,
-  _frame: 0,        // playback cursor
-  _recInterval: 10, // record every N game frames
+  _frame: 0,        
+  _recInterval: 10, 
 
   reset() { this.frames=[]; this._frame=0; this.replay=[]; this.replayName=''; this.replayScore=0; },
 
   record() {
-    // called from update() every _recInterval frames; cap at 6000 pts (~100s at 60fps/10)
+
     if(this.frames.length < 6000) this.frames.push([Math.round(P.x), Math.round(P.y)]);
   },
 
@@ -1017,11 +987,11 @@ var Ghost = {
 
   async maybeUpload(score) {
     if(!_supa || !Auth.isLoggedIn() || this.frames.length < 10) return;
-    // Only upload if this beats the user's own stored ghost
+
     try {
       const { data: ex } = await _supa.from('ghost_runs')
         .select('score').eq('user_id', Auth.user.id).maybeSingle();
-      if(ex && ex.score >= score) return; // not a new PB
+      if(ex && ex.score >= score) return; 
       await _supa.from('ghost_runs').upsert({
         user_id: Auth.user.id, username: Auth.getUsername(),
         score, path: this.frames
@@ -1030,7 +1000,6 @@ var Ghost = {
   }
 };
 
-// ── ACHIEVEMENTS ──────────────────────────────────────────
 var ACHIEV_DEFS = [
   {id:'first_blood',  n:'First Blood',      d:'Die for the first time',             ic:'🩸'},
   {id:'flawless',     n:'Flawless',         d:'Complete a level without dying',      ic:'✨'},
@@ -1049,7 +1018,7 @@ var ACHIEV_DEFS = [
 ];
 
 var Achievements = {
-  unlocked: new Set(), // ids unlocked this session + loaded from DB
+  unlocked: new Set(), 
 
   async init() {
     if(!_supa || !Auth.isLoggedIn()) return;
@@ -1063,12 +1032,12 @@ var Achievements = {
     if(this.unlocked.has(id)) return;
     this.unlocked.add(id);
     const def = ACHIEV_DEFS.find(a => a.id === id); if(!def) return;
-    // Show popup
+
     document.getElementById('achiev-name').textContent = def.ic + ' ' + def.n;
     const pop = document.getElementById('achiev-pop');
     pop.classList.add('show'); setTimeout(() => pop.classList.remove('show'), 3500);
     Sfx.star();
-    // Persist
+
     if(_supa && Auth.isLoggedIn()) {
       try { await _supa.from('achievements').insert({ user_id: Auth.user.id, achievement_id: id }); } catch(e){}
     }
@@ -1093,7 +1062,6 @@ var Achievements = {
   }
 };
 
-// ── DAILY SYNC ────────────────────────────────────────────
 var DailySync = {
   async load() {
     if(!_supa || !Auth.isLoggedIn()) return;
@@ -1102,7 +1070,7 @@ var DailySync = {
       const { data } = await _supa.from('daily_completions')
         .select('task_ids').eq('user_id', Auth.user.id).eq('challenge_date', today).maybeSingle();
       if(data?.task_ids?.length) {
-        // Mark any cloud-completed tasks as done locally too
+
         Save.daily.tasks.forEach(t => {
           if(data.task_ids.includes(t.id) && !t.c) {
             t.c = true;
@@ -1129,20 +1097,91 @@ var DailySync = {
   }
 };
 
-// ── MULTIPLAYER ───────────────────────────────────────────
+var Friends = {
+  _cache: null, _cacheTime: 0,
+  async load(force){
+    if(!_supa||!Auth.isLoggedIn())return[];
+    if(!force && this._cache && Date.now()-this._cacheTime<30000) return this._cache;
+    const {data}=await _supa.rpc('get_friends');
+    this._cache=data||[]; this._cacheTime=Date.now();
+    const pending=(this._cache).filter(f=>f.status==='pending'&&f.direction==='received').length;
+    const badge=document.getElementById('friends-badge');
+    if(badge) badge.textContent=pending||''; badge && (badge.style.display=pending?'flex':'none');
+    return this._cache;
+  },
+  async send(username){
+    if(!_supa||!Auth.isLoggedIn())return'offline';
+    const {data,error}=await _supa.rpc('send_friend_request',{p_username:username});
+    this._cache=null;
+    return data||'error';
+  },
+  async respond(requesterId,accept){
+    if(!_supa||!Auth.isLoggedIn())return;
+    await _supa.rpc('respond_friend_request',{p_requester_id:requesterId,p_accept:accept});
+    this._cache=null;
+  },
+  async renderPanel(){
+    const _esc=s=>String(s).replace(/[<>&"]/g,ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch]));
+    document.getElementById('menu-content').innerHTML=`<h2><i class="fas fa-user-group"></i> FRIENDS</h2><div id="friends-body" style="width:100%;max-width:600px"><div style="color:#555;padding:20px"><i class="fas fa-spinner fa-spin"></i></div></div><br><button class="btn" onclick="Game.menu()"><i class="fas fa-arrow-left"></i> BACK</button>`;
+    document.getElementById('menu-content').scrollTop=0;
+    if(!_supa||!Auth.isLoggedIn()){
+      document.getElementById('friends-body').innerHTML='<div style="color:#555;padding:20px">Sign in to use friends.</div>';return;
+    }
+    const list=await this.load(true);
+    const el=document.getElementById('friends-body');if(!el)return;
+    const pending=list.filter(f=>f.status==='pending'&&f.direction==='received');
+    const sent=list.filter(f=>f.status==='pending'&&f.direction==='sent');
+    const accepted=list.filter(f=>f.status==='accepted');
+    let h=`<div style="display:flex;gap:8px;margin-bottom:20px;"><input type="text" id="friend-add-input" class="auth-input" placeholder="Username to add..." style="flex:1;margin:0;padding:10px 14px;font-size:.9rem"/><button class="btn-small" onclick="Friends.addFromInput()" style="padding:10px 16px;border-color:var(--c-primary);color:var(--c-primary)"><i class="fas fa-user-plus"></i> ADD</button></div><div id="friend-add-msg" style="font-size:.85rem;margin-bottom:12px;min-height:18px;"></div>`;
+    if(pending.length){
+      h+=`<div style="font-size:.75rem;color:#555;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">REQUESTS (${pending.length})</div>`;
+      pending.forEach(f=>{h+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0d1018;border:1px solid rgba(0,241,255,.2);border-radius:6px;margin-bottom:6px"><div style="width:32px;height:32px;border-radius:50%;background:var(--c-primary);display:flex;align-items:center;justify-content:center;font-weight:900;color:#000">${_esc(f.username[0].toUpperCase())}</div><span style="flex:1;font-weight:700">${_esc(f.username)}</span><button class="btn-small" onclick="Friends.respond('${f.friend_id}',true)" style="border-color:var(--c-success);color:var(--c-success)"><i class="fas fa-check"></i></button><button class="btn-small" onclick="Friends.respond('${f.friend_id}',false)" style="border-color:var(--c-danger);color:var(--c-danger)"><i class="fas fa-xmark"></i></button></div>`;});
+    }
+    if(accepted.length){
+      h+=`<div style="font-size:.75rem;color:#555;letter-spacing:2px;text-transform:uppercase;margin:14px 0 8px">FRIENDS (${accepted.length})</div>`;
+      accepted.forEach(f=>{h+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0d1018;border:1px solid #1a1e28;border-radius:6px;margin-bottom:6px;cursor:pointer" onclick="Game.renderUserProfile('${_esc(f.username)}')"><div style="width:32px;height:32px;border-radius:50%;background:var(--c-success);display:flex;align-items:center;justify-content:center;font-weight:900;color:#000">${_esc(f.username[0].toUpperCase())}</div><span style="flex:1;font-weight:700">${_esc(f.username)}</span><span style="font-family:monospace;color:var(--c-primary);font-size:.85rem">${f.best_endless}m</span><i class="fas fa-chevron-right" style="color:#333"></i></div>`;});
+    }
+    if(sent.length){
+      h+=`<div style="font-size:.75rem;color:#555;letter-spacing:2px;text-transform:uppercase;margin:14px 0 8px">SENT</div>`;
+      sent.forEach(f=>{h+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0d1018;border:1px solid #1a1e28;border-radius:6px;margin-bottom:6px"><div style="width:32px;height:32px;border-radius:50%;background:#333;display:flex;align-items:center;justify-content:center;font-weight:900;color:#888">${_esc(f.username[0].toUpperCase())}</div><span style="flex:1;font-weight:700;color:#666">${_esc(f.username)}</span><span style="color:#444;font-size:.8rem">PENDING</span></div>`;});
+    }
+    if(!accepted.length&&!pending.length&&!sent.length) h+=`<div style="color:#444;text-align:center;padding:40px 0"><i class="fas fa-user-group" style="font-size:2.5rem;display:block;margin-bottom:12px;color:#222"></i>No friends yet.<br><span style="font-size:.85rem">Add someone by username above.</span></div>`;
+    el.innerHTML=h;
+  },
+  async addFromInput(){
+    const inp=document.getElementById('friend-add-input');
+    const msg=document.getElementById('friend-add-msg');
+    const name=(inp?.value||'').trim();
+    if(!name)return;
+    if(!msg)return;
+    msg.textContent=''; msg.style.color='#888'; msg.textContent='Sending...';
+    const result=await this.send(name);
+    const map={sent:'Request sent!',accepted:'Now friends!',not_found:'User not found.',self:"That's you.",error:'Something went wrong.'};
+    msg.textContent=map[result]||result;
+    msg.style.color=result==='sent'||result==='accepted'?'var(--c-success)':'var(--c-danger)';
+    if(result==='sent'||result==='accepted'){inp.value='';this.renderPanel();}
+  },
+  async respond(friendId,accept){
+    await this.respond_internal(friendId,accept);
+    this.renderPanel();
+  },
+  async respond_internal(friendId,accept){
+    await _supa.rpc('respond_friend_request',{p_requester_id:friendId,p_accept:accept});
+    this._cache=null;
+  },
+};
+
 const MP_COLORS = ['#00f1ff','#ff0055','#ffe900','#00ffaa','#a020f0','#ff6600','#ffffff','#ff69b4'];
 var MP = {
   active:false, roomCode:null, isHost:false, channel:null,
   players:{}, myColor:'#00f1ff', myId:null,
   _posInterval:null, _roomSeed:0, _results:[],
 
-  // ── helpers ──────────────────────────────────────────────
   _genCode(){ return Math.random().toString(36).substring(2,6).toUpperCase(); },
   _esc(s){ return String(s).replace(/[<>&"]/g,ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch])); },
   _send(event,payload){ if(this.channel) this.channel.send({type:'broadcast',event,payload}); },
   _bgClose(e){ if(e.target.classList.contains('mp-backdrop')) this.closeLobby(); },
 
-  // ── lobby flow ────────────────────────────────────────────
   openLobby(){
     if(!Auth.isLoggedIn()){ alert('Sign in to use multiplayer.'); return; }
     document.getElementById('mp-lobby').classList.add('show');
@@ -1153,7 +1192,7 @@ var MP = {
 
   async createRoom(){
     this.roomCode = this._genCode();
-    this._roomSeed = Date.now() % 999983;   // shared seed for identical map
+    this._roomSeed = Date.now() % 999983;   
     this.isHost = true;
     await this._connect();
     this._showWaiting();
@@ -1174,10 +1213,9 @@ var MP = {
     setTimeout(()=>{el.style.borderColor='';el.style.animation='';},400);
   },
 
-  // ── channel ───────────────────────────────────────────────
   async _connect(){
     this.myId = Auth.user.id;
-    // Pick unused color
+
     const taken = Object.values(this.players).map(p=>p.color);
     this.myColor = MP_COLORS.find(c=>!taken.includes(c)) || MP_COLORS[0];
     if(this.channel){ await _supa.removeChannel(this.channel); }
@@ -1214,16 +1252,16 @@ var MP = {
         color:MP_COLORS.find(c=>!taken.includes(c))||MP_COLORS[1],
         x:0,y:0,score:0,alive:true
       };
-      // Re-announce self + seed (host only)
+
       this._send('join',{id:this.myId,username:Auth.getUsername(),color:this.myColor,rank:this.getRankLabel()});
       if(this.isHost) this._send('seed',{seed:this._roomSeed});
       this._sysChat(`${this._esc(p.username)} joined the room`);
     } else {
-      // update username/color if reconnecting
+
       Object.assign(this.players[p.id],{username:p.username,color:p.color});
     }
     this._updateLobby();
-    // Show start button if ≥2 players
+
     const startBtn=document.getElementById('mp-start-btn');
     if(startBtn) startBtn.style.display=this.isHost&&Object.keys(this.players).length>=2?'flex':'none';
   },
@@ -1237,7 +1275,6 @@ var MP = {
     if(this.active) this._checkAllDead();
   },
 
-  // ── lobby UI ──────────────────────────────────────────────
   _showWaiting(){
     document.getElementById('mp-create-screen').style.display='none';
     document.getElementById('mp-waiting-screen').style.display='block';
@@ -1266,7 +1303,7 @@ var MP = {
         ${badge}
       </div>`;
     }).join('');
-    // Hint for non-host
+
     if(!this.isHost){
       list.innerHTML+=`<div style="color:#333;font-size:.75rem;text-align:center;padding:8px 0;letter-spacing:1px"><i class="fas fa-clock"></i> WAITING FOR HOST TO START</div>`;
     }
@@ -1279,7 +1316,6 @@ var MP = {
     setTimeout(()=>el.textContent=orig,1200);
   },
 
-  // ── chat ─────────────────────────────────────────────────
   sendChat(){
     const input=document.getElementById('mp-chat-input');
     const msg=(input?.value||'').trim();
@@ -1305,7 +1341,6 @@ var MP = {
     box.scrollTop=box.scrollHeight;
   },
 
-  // ── game start ────────────────────────────────────────────
   startGame(){
     if(!this.isHost) return;
     const seed=this._roomSeed;
@@ -1322,7 +1357,7 @@ var MP = {
     const tick=()=>{
       num.textContent=n;
       num.style.animation='none';
-      void num.offsetWidth; // reflow
+      void num.offsetWidth; 
       num.style.animation='countPulse .8s ease-out';
       if(n===0){
         setTimeout(()=>{ el.classList.remove('show'); this._startMP(); },600);
@@ -1337,7 +1372,7 @@ var MP = {
     this.active=true;
     this._results=[];
     Object.values(this.players).forEach(p=>{p.x=0;p.y=0;p.score=0;p.alive=true;p.finishTime=null;});
-    // Use shared seed for identical map generation
+
     const savedSeed=this._roomSeed;
     startGame(0,MODE.ENDLESS,true,savedSeed);
     document.getElementById('mp-hud').classList.add('active');
@@ -1345,7 +1380,6 @@ var MP = {
     this._posInterval=setInterval(()=>this._broadcastPos(),100);
   },
 
-  // ── in-game ───────────────────────────────────────────────
   _broadcastPos(){
     if(!this.active||!this.channel)return;
     this._send('pos',{id:this.myId,x:P.x,y:P.y,score:endlessScore,color:this.myColor,username:Auth.getUsername()});
@@ -1371,7 +1405,7 @@ var MP = {
     this._results.push({username:p.username,color:p.color,score:p.score,isMe:false});
     this._updateHud();
     this._checkAllDead();
-    // Toast for others dying
+
     if(CloudSave._toast) CloudSave._toast(`<i class="fas fa-skull" style="color:${p.color}"></i> ${this._esc(p.username)} died at ${p.score}m`);
   },
 
@@ -1383,9 +1417,9 @@ var MP = {
   },
 
   _showResults(){
-    // Sort by score desc
+
     const sorted=[...this._results].sort((a,b)=>b.score-a.score);
-    // Also add anyone who was alive but not in results (edge case)
+
     Object.values(this.players).forEach(p=>{
       if(!sorted.find(r=>r.username===p.username))
         sorted.push({username:p.username,color:p.color,score:p.score||0,isMe:p.isMe});
@@ -1393,7 +1427,7 @@ var MP = {
     sorted.sort((a,b)=>b.score-a.score);
 
     const winner=sorted[0];
-    // log to supabase (fire and forget)
+
     if(_supa&&this.isHost&&winner){
       _supa.from('mp_sessions').insert({
         room_code:this.roomCode, player_count:sorted.length,
@@ -1413,7 +1447,6 @@ var MP = {
     const el=document.getElementById('endless-menu');
     if(el) el.style.display='none';
 
-    // Build a custom results overlay
     const overlay=document.createElement('div');
     overlay.className='overlay-menu';
     overlay.id='mp-results-menu';
@@ -1464,7 +1497,6 @@ var MP = {
     document.getElementById('mp-waiting-screen').style.display='none';
   },
 
-  // ── in-game HUD ───────────────────────────────────────────
   _updateHud(){
     const el=document.getElementById('mp-hud-players'); if(!el)return;
     const sorted=Object.entries(this.players)
@@ -1478,7 +1510,6 @@ var MP = {
       </div>`).join('');
   },
 
-  // ── canvas drawing ────────────────────────────────────────
   drawOtherPlayers(){
     if(!this.active)return;
     ctx.save();
@@ -1487,14 +1518,12 @@ var MP = {
       const sx=p.x-cam.x, sy=p.y-cam.y;
       if(sx<-80||sx>cvs.width+80||sy<-80||sy>cvs.height+80)return;
 
-      // Player body with glow
       ctx.globalAlpha=0.75;
       ctx.fillStyle=p.color;
       ctx.shadowBlur=18; ctx.shadowColor=p.color;
       ctx.fillRect(sx,sy,30,30);
       ctx.shadowBlur=0;
 
-      // Name tag
       ctx.globalAlpha=1;
       const safe=p.username.substring(0,8);
       ctx.font='bold 11px Rajdhani';
@@ -1505,12 +1534,10 @@ var MP = {
       ctx.fillStyle='#fff';
       ctx.fillText(safe,sx+15,sy-10);
 
-      // Score tag
       ctx.font='bold 9px monospace';
       ctx.fillStyle=p.color;
       ctx.fillText(p.score+'m',sx+15,sy+44);
 
-      // Directional arrow if far off screen
       const myX=P.x;
       const diffX=p.x-myX;
       if(Math.abs(diffX)>cvs.width*0.6){
@@ -1543,7 +1570,7 @@ const save=()=>{Save.stats.unlocked=Save.maxLvl+1;Save.keys=CFG.keys;localStorag
 const DAILY_DEFS=[{id:0,n:"Coin Collector",d:"Collect 50 coins today",goal:50,r:500,stat:"coins",ic:"🪙"},{id:1,n:"Level Master",d:"Complete 5 levels today",goal:5,r:800,stat:"levels",ic:"🏆"},{id:2,n:"Death Defier",d:"Die 10 times today",goal:10,r:300,stat:"deaths",ic:"💀"},{id:3,n:"Speed Demon",d:"Dash 20 times today",goal:20,r:400,stat:"dashes",ic:"⚡"},{id:4,n:"High Jumper",d:"Jump 100 times today",goal:100,r:400,stat:"jumps",ic:"🐇"}];
 const checkDaily=()=>{let t=new Date().toDateString();if(Save.daily.date!==t){Save.daily.date=t;let i=[];while(i.length<2){let r=Math.floor(Math.random()*DAILY_DEFS.length);if(i.indexOf(r)===-1)i.push(r);}Save.daily.tasks=i.map(id=>({id:id,p:0,c:false}));save();}};checkDaily();
 if(Save.light)document.body.classList.add('light-mode');
-// Sort items
+
 DB.skins.sort((a,b)=>a.p-b.p);
 DB.upgrades.sort((a,b)=>a.p-b.p);
 DB.backgrounds.sort((a,b)=>a.p-b.p);
@@ -1637,21 +1664,9 @@ var Game={
     getRankBadge(score){const r=this.getRank(score);return`<span class="rank-badge" style="color:${r.c};border:1px solid ${r.c};background:${r.c}18"><i class="fas ${r.i}"></i> ${r.t}</span>`;},
     renderMain(){
   const userBar=Auth.isLoggedIn()
-    ?`<div class="auth-user-bar show"><div class="auth-avatar">${Auth.getUsername()[0].toUpperCase()}</div><span style="flex:1">${Auth.getUsername()}</span><button class="btn-small" onclick="Auth.logout()" style="font-size:.75rem;padding:4px 10px;">LOGOUT</button></div>`
-    :`<div class="signin-card" onclick="document.getElementById('auth-overlay').classList.add('show')">
-      <div class="signin-card-icon"><i class="fas fa-bolt"></i></div>
-      <div class="signin-card-body">
-        <div class="signin-card-title">Sign in to Neon Leap</div>
-        <div class="signin-perks" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:4px;">
-          <span class="signin-perk"><i class="fas fa-cloud"></i> Cloud Save</span>
-          <span class="signin-perk"><i class="fas fa-trophy"></i> Leaderboards</span>
-          <span class="signin-perk"><i class="fas fa-users"></i> Multiplayer</span>
-          <span class="signin-perk"><i class="fas fa-ghost"></i> Ghost Replay</span>
-        </div>
-      </div>
-      <div class="signin-card-arrow"><i class="fas fa-chevron-right"></i></div>
-    </div>`;
-  let h=`<h1>NEON <span>LEAP</span></h1><h2>ULTIMATE STATS</h2>${userBar}<div class="mode-select"><div class="mode-card" onclick="Game.renderLevels(MODE.NORMAL)"><h3>ADVENTURE</h3><p>Relaxed pace.</p></div><div class="mode-card" onclick="Game.renderLevels(MODE.TIME)"><h3>TIME TRIAL</h3><p>Race against the clock.</p></div><div class="mode-card" onclick="startGame(0,MODE.ENDLESS)"><h3>ENDLESS</h3><p>One life.</p></div><div class="mode-card" style="border-color:#00f1ff;background:rgba(0,241,255,.04)" onclick="MP.openLobby()"><h3 style="color:#00f1ff"><i class="fas fa-bolt"></i> MULTI</h3><p>Endless race with friends. Same map, one winner.</p></div></div><button class="btn btn-primary" onclick="Game.renderStats()"><i class="fas fa-user"></i> PROFILE</button><button class="btn btn-rare" onclick="Game.renderShop()"><i class="fas fa-store"></i> SHOP</button><button class="btn btn-accent" onclick="Game.renderLeaderboard('endless')"><i class="fas fa-trophy"></i> LEADERBOARD</button><button class="btn" onclick="Game.renderProgress('daily')"><i class="fas fa-list-check"></i> PROGRESS</button><button class="btn" onclick="Game.renderSettings()"><i class="fas fa-gear"></i> SETTINGS</button>`;
+    ?`<div class="auth-user-bar show"><div class="auth-avatar">${Auth.getUsername()[0].toUpperCase()}</div><span style="flex:1;font-weight:700">${Auth.getUsername()}</span>${Game.getRankBadge()}<button class="btn-small" onclick="Friends.renderPanel()" style="position:relative"><i class="fas fa-user-group"></i> <span id="friends-badge" style="display:none;position:absolute;top:-4px;right:-4px;background:var(--c-danger);color:#fff;border-radius:50%;width:14px;height:14px;font-size:.55rem;align-items:center;justify-content:center;font-weight:900"></span></button><button class="btn-small" onclick="Auth.logout()"><i class="fas fa-right-from-bracket"></i></button></div>`
+    :`<button class="btn-small" onclick="document.getElementById('auth-overlay').classList.add('show')" style="margin-bottom:14px;padding:7px 18px;font-size:.85rem;border-color:var(--c-primary);color:var(--c-primary);"><i class="fas fa-right-to-bracket"></i> SIGN IN</button>`;
+  let h=`<h1>NEON <span>LEAP</span></h1><h2>ULTIMATE STATS</h2>${userBar}<div class="mode-select"><div class="mode-card" onclick="Game.renderLevels(MODE.NORMAL)"><h3>ADVENTURE</h3><p>Relaxed pace.</p></div><div class="mode-card" onclick="Game.renderLevels(MODE.TIME)"><h3>TIME TRIAL</h3><p>Race against the clock.</p></div><div class="mode-card" onclick="startGame(0,MODE.ENDLESS)"><h3>ENDLESS</h3><p>One life.</p></div><div class="mode-card" style="border-color:#00f1ff;background:rgba(0,241,255,.04)" onclick="MP.openLobby()"><h3 style="color:#00f1ff"><i class="fas fa-bolt"></i> MULTI</h3><p>Endless race with friends. Same map, one winner.</p></div></div><button class="btn btn-primary" onclick="Game.renderStats()"><i class="fas fa-user"></i> PROFILE</button><button class="btn btn-rare" onclick="Game.renderShop()"><i class="fas fa-store"></i> SHOP</button><button class="btn btn-accent" onclick="Game.renderLeaderboard('endless')"><i class="fas fa-trophy"></i> LEADERBOARD</button><button class="btn" onclick="Game.renderProgress('daily')"><i class="fas fa-list-check"></i> PROGRESS</button><button class="btn" onclick="Friends.renderPanel()"><i class="fas fa-user-group"></i> FRIENDS</button><button class="btn" onclick="Game.renderSettings()"><i class="fas fa-gear"></i> SETTINGS</button>`;
   document.getElementById('menu-content').innerHTML=h;
 },
     openLvlLb(level){
@@ -1808,7 +1823,7 @@ var Game={
             DB.upgrades.forEach(u=>{
                 let owned=Save.ups[u.id];
                 let disabled=Save.disabledUps.includes(u.id);
-                // IF OWNED: Show toggle button
+
                 let btn = '';
                 if(owned) {
                     btn = `<button class="card-btn toggle ${disabled?'':'on'}" onclick="Game.toggleUp('${u.id}')">${disabled?'DISABLED':'ENABLED'}</button>`;
@@ -1848,7 +1863,7 @@ var Game={
             Save.disabledUps.push(id);
         }
         save();
-        this.switchShop('up'); // Refresh UI
+        this.switchShop('up'); 
     },
     redeemCode(){let code=document.getElementById('coupon-in').value.toUpperCase().trim();let valid={"NEON2024":1000,"START":500,"SPEED":300,"JUMP":300,"LD_15":1000000000};if(Save.codes.includes(code)){alert("Code already used!");return;}if(valid[code]){Save.codes.push(code);Save.money+=valid[code];alert("Redeemed: "+(valid[code]>100000?"UNLIMITED POWER!":valid[code]+" Coins!"));save();Game.renderShop();}else alert("Invalid Code");},
     curColor:"#ffffff",setPalette(c,el){Game.curColor=c;document.getElementById('cur-color').style.background=c;document.querySelectorAll('.color-swatch').forEach(e=>e.classList.remove('active'));if(el)el.classList.add('active');},
@@ -1932,30 +1947,57 @@ var Game={
             <div class="stat-card"><div class="stat-val">${d.distance?Number(d.distance).toFixed(0)+'m':'—'}</div><div class="stat-label"><i class="fas fa-route"></i> Distance</div></div>
           </div>
         </div>
-        <br><button class="btn" onclick="Game.renderLeaderboard('endless')"><i class='fas fa-arrow-left'></i> BACK</button>`;
+        <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center;">${!isYou&&Auth.isLoggedIn()?`<button class="btn btn-primary" onclick="Friends.send('${safe}').then(r=>{const m={sent:'Request sent!',accepted:'Now friends!',not_found:'Not found.',self:'',error:'Error'};CloudSave._toast('<i class=\"fas fa-user-plus\"></i> '+m[r]);Friends._cache=null;Game.renderMain();})" style="min-width:auto;padding:14px 24px"><i class="fas fa-user-plus"></i> ADD FRIEND</button>`:''}<button class="btn" onclick="Game.renderLeaderboard('endless')" style="min-width:auto;padding:14px 24px"><i class="fas fa-arrow-left"></i> BACK</button></div>`;
       document.getElementById('menu-content').scrollTop=0;
     } catch(e){
       document.getElementById('menu-content').innerHTML=`<h2><i class='fas fa-user'></i> PLAYER PROFILE</h2><div style="color:var(--c-danger);padding:20px;"><i class='fas fa-circle-exclamation'></i> Error loading profile.</div><br><button class="btn" onclick="Game.renderLeaderboard()"><i class='fas fa-arrow-left'></i> BACK</button>`;
     }
   },
-  async renderLeaderboard(type='endless'){
+  async renderLeaderboard(type='endless', lvl=1){
     const you=Auth.isLoggedIn()?Auth.getUsername():null;
-    document.getElementById('menu-content').innerHTML=`<h2><i class='fas fa-trophy'></i> LEADERBOARD</h2><div class="lb-tabs"><button class="lb-tab ${type==='endless'?'active':''}" onclick="Game.renderLeaderboard('endless')"><i class='fas fa-infinity'></i> ENDLESS</button><button class="lb-tab ${type==='time'?'active':''}" onclick="Game.renderLeaderboard('time')"><i class='fas fa-clock'></i> SPEEDRUN</button></div><div id="lb-content" style="width:100%;max-width:700px;"><div style="color:#666;padding:30px;">Loading...</div></div><br><button class="btn" onclick="Game.menu()">BACK</button>`;
+    const esc=s=>String(s).replace(/[<>&"]/g,ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch]));
+    const fmt=ms=>{const m=Math.floor(ms/60000),s=Math.floor((ms%60000)/1000),x=Math.floor((ms%1000)/10);return(m?m+'m ':'')+s+'.'+(x<10?'0'+x:x)+'s';};
+    const tabBar=`<div class="lb-tabs">
+      <button class="lb-tab ${type==='endless'?'active':''}" onclick="Game.renderLeaderboard('endless')"><i class="fas fa-infinity"></i> ENDLESS</button>
+      <button class="lb-tab ${type==='time'?'active':''}" onclick="Game.renderLeaderboard('time')"><i class="fas fa-clock"></i> SPEEDRUN</button>
+      <button class="lb-tab ${type==='level'?'active':''}" onclick="Game.renderLeaderboard('level',${lvl})"><i class="fas fa-stopwatch"></i> PER LEVEL</button>
+    </div>`;
+    document.getElementById('menu-content').innerHTML=`<h2><i class="fas fa-trophy"></i> LEADERBOARD</h2>${tabBar}<div id="lb-content" style="width:100%;max-width:700px"><div style="color:#444;padding:24px;text-align:center"><i class="fas fa-spinner fa-spin"></i></div></div><br><button class="btn" onclick="Game.menu()"><i class="fas fa-arrow-left"></i> BACK</button>`;
     document.getElementById('menu-content').scrollTop=0;
     const el=document.getElementById('lb-content');
-    if(!_supa){el.innerHTML='<div style="color:var(--c-danger);padding:20px;">Not connected.</div>';return;}
+    if(!_supa){el.innerHTML='<div style="color:var(--c-danger);padding:20px">Not connected.</div>';return;}
+
     if(type==='endless'){
       const rows=await LB.getEndlessTop(25);
-      if(!rows.length){el.innerHTML='<div style="color:#666;padding:20px;">No scores yet. Be the first!</div>';return;}
-      let h=`<table class="lb-table"><thead><tr><th>#</th><th>PLAYER</th><th>SCORE</th><th>DATE</th></tr></thead><tbody>`;
-      rows.forEach((r,i)=>{const iy=you&&r.username===you;const esc=s=>s.replace(/[<>&"]/g,ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch]));const medal=i===0?'<i class="fas fa-medal" style="color:#ffd700"></i>':i===1?'<i class="fas fa-medal" style="color:#c0c0c0"></i>':i===2?'<i class="fas fa-medal" style="color:#cd7f32"></i>':'#'+(i+1);const safe=esc(r.username);h+=`<tr class="${i===0?'lb-rank-1':i===1?'lb-rank-2':i===2?'lb-rank-3':''} ${iy?'lb-you':''}"><td>${medal}</td><td><span class="lb-username" onclick="Game.renderUserProfile('${safe}')">${safe}</span>${iy?' <i class="fas fa-caret-left" style="font-size:.7rem;margin-left:4px"></i>':''}</td><td>${r.score}m</td><td>${new Date(r.created_at).toLocaleDateString()}</td></tr>`;});
+      if(!rows.length){el.innerHTML='<div style="color:#555;padding:20px">No scores yet.</div>';return;}
+      let h=`<table class="lb-table"><thead><tr><th></th><th>PLAYER</th><th>SCORE</th><th>DATE</th></tr></thead><tbody>`;
+      rows.forEach((r,i)=>{const iy=you&&r.username===you;const safe=esc(r.username);const medal=i===0?'<i class="fas fa-medal" style="color:#ffd700"></i>':i===1?'<i class="fas fa-medal" style="color:#c0c0c0"></i>':i===2?'<i class="fas fa-medal" style="color:#cd7f32"></i>':'#'+(i+1);h+=`<tr class="${['lb-rank-1','lb-rank-2','lb-rank-3'][i]||''} ${iy?'lb-you':''}"><td>${medal}</td><td><span class="lb-username" onclick="Game.renderUserProfile('${safe}')">${safe}</span>${iy?' <i class="fas fa-caret-left" style="color:var(--c-primary);font-size:.7rem"></i>':''}</td><td style="font-family:monospace">${r.score}m</td><td style="color:#444">${new Date(r.created_at).toLocaleDateString()}</td></tr>`;});
       el.innerHTML=h+'</tbody></table>';
-    } else {
+
+    } else if(type==='time'){
       const rows=await LB.getSpeedrunTop(25);
-      if(!rows.length){el.innerHTML='<div style="color:#666;padding:20px;">No records yet.</div>';return;}
-      let h=`<div style="color:#888;font-size:.85rem;margin-bottom:15px;">Sum of personal bests across all levels</div><table class="lb-table"><thead><tr><th>#</th><th>PLAYER</th><th>LEVELS</th><th>TOTAL TIME</th></tr></thead><tbody>`;
-      rows.forEach((r,i)=>{const iy=you&&r.username===you;const esc=s=>s.replace(/[<>&"]/g,ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch]));const medal=i===0?'<i class="fas fa-medal" style="color:#ffd700"></i>':i===1?'<i class="fas fa-medal" style="color:#c0c0c0"></i>':i===2?'<i class="fas fa-medal" style="color:#cd7f32"></i>':'#'+(i+1);const t=Number(r.total_ms);const m=Math.floor(t/60000);const s=Math.floor((t%60000)/1000);const ms=Math.floor((t%1000)/10);const safe=esc(r.username);h+=`<tr class="${i===0?'lb-rank-1':i===1?'lb-rank-2':i===2?'lb-rank-3':''} ${iy?'lb-you':''}"><td>${medal}</td><td><span class="lb-username" onclick="Game.renderUserProfile('${safe}')">${safe}</span>${iy?' <i class="fas fa-caret-left" style="font-size:.7rem;margin-left:4px"></i>':''}</td><td>${r.level_count}</td><td>${m<10?'0'+m:m}:${s<10?'0'+s:s}:${ms<10?'0'+ms:ms}</td></tr>`;});
+      if(!rows.length){el.innerHTML='<div style="color:#555;padding:20px">No records yet.</div>';return;}
+      let h=`<div style="color:#555;font-size:.8rem;margin-bottom:12px">Sum of personal bests across all timed levels</div><table class="lb-table"><thead><tr><th></th><th>PLAYER</th><th>LEVELS</th><th>TOTAL TIME</th></tr></thead><tbody>`;
+      rows.forEach((r,i)=>{const iy=you&&r.username===you;const safe=esc(r.username);const medal=i===0?'<i class="fas fa-medal" style="color:#ffd700"></i>':i===1?'<i class="fas fa-medal" style="color:#c0c0c0"></i>':i===2?'<i class="fas fa-medal" style="color:#cd7f32"></i>':'#'+(i+1);const t=Number(r.total_ms);const m=Math.floor(t/60000),s=Math.floor((t%60000)/1000),ms=Math.floor((t%1000)/10);h+=`<tr class="${['lb-rank-1','lb-rank-2','lb-rank-3'][i]||''} ${iy?'lb-you':''}"><td>${medal}</td><td><span class="lb-username" onclick="Game.renderUserProfile('${safe}')">${safe}</span>${iy?' <i class="fas fa-caret-left" style="color:var(--c-primary);font-size:.7rem"></i>':''}</td><td style="color:#555">${r.level_count}</td><td style="font-family:monospace">${m<10?'0'+m:m}:${s<10?'0'+s:s}:${ms<10?'0'+ms:ms}</td></tr>`;});
       el.innerHTML=h+'</tbody></table>';
+
+    } else {
+      const lvlNum=Math.max(1,Math.min(CFG.MAX_LEVELS,parseInt(lvl)||1));
+      const myTime=Save.times[lvlNum-1];
+      el.innerHTML=`<div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <button onclick="Game.renderLeaderboard('level',Math.max(1,${lvlNum}-1))" style="background:#111;border:1px solid #222;color:#666;width:32px;height:32px;cursor:pointer;border-radius:4px" ${lvlNum<=1?'disabled':''}><i class="fas fa-chevron-left"></i></button>
+        <div style="flex:1;text-align:center"><div style="font-size:1.5rem;font-weight:900;color:#fff">LEVEL ${lvlNum}</div><div style="font-size:.75rem;color:#444;letter-spacing:2px">TIME TRIAL</div></div>
+        <button onclick="Game.renderLeaderboard('level',Math.min(${CFG.MAX_LEVELS},${lvlNum}+1))" style="background:#111;border:1px solid #222;color:#666;width:32px;height:32px;cursor:pointer;border-radius:4px" ${lvlNum>=CFG.MAX_LEVELS?'disabled':''}><i class="fas fa-chevron-right"></i></button>
+        <div style="display:flex;align-items:center;gap:6px"><input type="number" min="1" max="${CFG.MAX_LEVELS}" value="${lvlNum}" onchange="Game.renderLeaderboard('level',this.value)" style="width:64px;background:#111;border:1px solid #222;color:#fff;padding:6px 8px;text-align:center;border-radius:4px;font-family:monospace"/></div>
+      </div>${myTime?`<div style="background:rgba(0,241,255,.06);border:1px solid rgba(0,241,255,.2);border-radius:6px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center"><span style="color:#555;font-size:.8rem"><i class="fas fa-user"></i> YOUR PB</span><span style="color:var(--c-primary);font-family:monospace;font-weight:800">${fmt(myTime)}</span></div>`:''}<div id="lb-level-rows"><i class="fas fa-spinner fa-spin" style="color:#444"></i></div>`;
+      LB.getLevelTop(lvlNum-1,20).then(rows=>{
+        const rowEl=document.getElementById('lb-level-rows');if(!rowEl)return;
+        if(!rows.length){rowEl.innerHTML='<div style="color:#555;padding:20px;text-align:center"><i class="fas fa-ghost"></i> No records yet.<br><button class="btn btn-primary" onclick="deathsInLevel=0;startGame('+(lvlNum-1)+',MODE.TIME)" style="margin-top:12px;min-width:auto;padding:12px 24px"><i class="fas fa-play"></i> PLAY NOW</button></div>';return;}
+        let h=`<table class="lb-table"><thead><tr><th></th><th>PLAYER</th><th>TIME</th><th>DATE</th></tr></thead><tbody>`;
+        rows.forEach(r=>{const iy=you&&r.username===you;const safe=esc(r.username);const n=Number(r.rank);const medal=n===1?'<i class="fas fa-medal" style="color:#ffd700"></i>':n===2?'<i class="fas fa-medal" style="color:#c0c0c0"></i>':n===3?'<i class="fas fa-medal" style="color:#cd7f32"></i>':`#${n}`;h+=`<tr class="${n<=3?'lb-rank-'+n:''} ${iy?'lb-you':''}"><td>${medal}</td><td><span class="lb-username" onclick="Game.renderUserProfile('${safe}')">${safe}</span></td><td style="font-family:monospace">${fmt(r.time_ms)}</td><td style="color:#444">${new Date(r.created_at).toLocaleDateString()}</td></tr>`;});
+        h+=`</tbody></table><br><div style="text-align:center"><button class="btn btn-primary" onclick="deathsInLevel=0;startGame(${lvlNum-1},MODE.TIME)" style="min-width:auto;padding:14px 28px"><i class="fas fa-play"></i> PLAY LEVEL ${lvlNum}</button></div>`;
+        rowEl.innerHTML=h;
+      });
     }
   }
 };
