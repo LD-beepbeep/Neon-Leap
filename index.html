@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Neon Leap 2</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700;800&display=swap');
   @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
@@ -391,6 +392,29 @@
   .mp-hud-score{margin-left:auto;color:var(--c-primary);font-family:monospace;}
   .mp-dead{opacity:.4;text-decoration:line-through;}
 
+
+  /* FA in buttons */
+  .btn i, .btn-small i { margin-right: 7px; }
+  .chal-icon i { font-size: 2rem; }
+  /* Clickable leaderboard name */
+  .lb-username { cursor: pointer; transition: color .15s; }
+  .lb-username:hover { color: var(--c-primary); text-decoration: underline; }
+  /* User profile card */
+  .profile-card { width:100%;max-width:600px;background:#0b0e14;border:1px solid #333;padding:30px;text-align:center;border-radius:8px;margin-bottom:25px; }
+  body.light-mode .profile-card { background:#fff;border-color:#ddd; }
+  .profile-avatar { width:72px;height:72px;border-radius:50%;background:var(--c-primary);display:flex;align-items:center;justify-content:center;font-size:2rem;font-weight:900;color:#000;margin:0 auto 15px; }
+  .profile-username { font-size:2rem;font-weight:800;color:#fff;font-style:italic;margin-bottom:4px; }
+  body.light-mode .profile-username { color:#222; }
+  .profile-since { color:#555;font-size:.8rem;letter-spacing:2px;text-transform:uppercase;margin-bottom:20px; }
+  /* Progress tabs */
+  .prog-tabs { display:flex;width:100%;max-width:800px;border-bottom:2px solid #222;margin-bottom:25px; }
+  .prog-tab { flex:1;padding:12px 5px;background:none;border:none;color:#555;cursor:pointer;font-weight:800;font-family:inherit;font-size:.95rem;text-transform:uppercase;letter-spacing:1px;transition:.2s;display:flex;align-items:center;justify-content:center;gap:6px; }
+  .prog-tab:hover { color:#fff; }
+  .prog-tab.active { color:var(--c-primary);border-bottom:3px solid var(--c-primary);margin-bottom:-2px; }
+  /* Toast */
+  .toast { position:fixed;bottom:30px;left:50%;transform:translateX(-50%);background:#0b0e14;border:1px solid var(--c-success);color:var(--c-success);padding:12px 24px;border-radius:4px;font-weight:bold;font-size:.9rem;z-index:400;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;display:flex;align-items:center;gap:8px; }
+  .toast.show { opacity:1; }
+
 </style>
 </head>
 <body>
@@ -421,8 +445,8 @@
     <div id="endless-menu" class="overlay-menu" style="display:none;"><h2 style="color:var(--c-danger);font-size:4rem;margin-bottom:10px;text-shadow:0 0 20px var(--c-danger)">GAME OVER</h2><div class="win-subtitle" style="color:#fff">DISTANCE RUN</div><div id="endless-score-val" class="win-time" style="color:#fff">0m</div><div id="endless-best-val" style="color:var(--c-accent);font-weight:bold;font-size:1.5rem;margin-bottom:20px">BEST: 0m</div>
     <div style="margin-bottom:20px;width:100%;max-width:300px;"><div style="color:#888;margin-bottom:5px;font-size:0.8rem;">TOP 3 RUNS</div><div id="endless-top3"></div></div>
     <div style="display:flex;gap:10px;"><button class="btn btn-primary" onclick="Game.retryLevel()">RETRY</button><button class="btn btn-danger" onclick="Game.menu()">QUIT</button></div></div>
-    <div id="chal-pop" class="chal-pop"><div class="chal-icon">🏆</div><div class="chal-info"><div>CHALLENGE COMPLETE</div><div id="chal-name">First Blood</div></div></div>
-    <div id="achiev-pop" class="chal-pop" style="top:220px;border-color:var(--c-rare);"><div class="chal-icon">🎖️</div><div class="chal-info"><div style="color:var(--c-rare)">ACHIEVEMENT UNLOCKED</div><div id="achiev-name">—</div></div></div>
+    <div id="chal-pop" class="chal-pop"><div class="chal-icon"><i class="fas fa-trophy"></i></div><div class="chal-info"><div>CHALLENGE COMPLETE</div><div id="chal-name">First Blood</div></div></div>
+    <div id="achiev-pop" class="chal-pop" style="top:220px;border-color:var(--c-rare);"><div class="chal-icon" style="color:var(--c-rare)"><i class="fas fa-medal"></i></div><div class="chal-info"><div style="color:var(--c-rare)">ACHIEVEMENT UNLOCKED</div><div id="achiev-name">—</div></div></div>
   </div>
   <div id="mobile"><div id="mb-l" class="t-btn">←</div><div id="mb-r" class="t-btn">→</div><div id="mb-j" class="t-btn">↑</div><div id="mb-d" class="t-btn">⚡</div><div id="mb-c" class="t-btn">⏳</div></div>
   
@@ -437,8 +461,8 @@
     <input type="email" id="auth-email" class="auth-input" placeholder="Email address"/>
     <input type="password" id="auth-password" class="auth-input" placeholder="Password"/>
     <div id="auth-error" class="auth-error"></div>
-    <button class="btn btn-primary" id="auth-submit-btn" onclick="Auth.submit()" style="min-width:100%;margin:0;padding:18px;">LOGIN</button>
-    <button class="btn" onclick="Auth.skip()" style="min-width:100%;margin:8px 0 0;padding:14px;">PLAY OFFLINE</button>
+    <button class="btn btn-primary" id="auth-submit-btn" onclick="Auth.submit()" style="min-width:100%;margin:0;padding:18px;"><i class="fas fa-right-to-bracket"></i> LOGIN</button>
+    <button class="btn" onclick="Auth.skip()" style="min-width:100%;margin:8px 0 0;padding:14px;"><i class="fas fa-play"></i> PLAY OFFLINE</button>
   </div>
 </div>
 <div id="username-setup">
@@ -452,7 +476,7 @@
 </div>
 <div id="mp-lobby">
   <div class="mp-box">
-    <h2>⚡ MULTIPLAYER</h2><p style="color:#666;margin-bottom:20px;">Endless mode with friends</p>
+    <h2><i class="fas fa-bolt" style="color:var(--c-primary)"></i> MULTIPLAYER</h2><p style="color:#666;margin-bottom:20px;">Endless mode with friends</p>
     <div id="mp-create-screen">
       <button class="btn btn-primary" onclick="MP.createRoom()" style="min-width:260px;margin-bottom:10px;">CREATE ROOM</button>
       <div style="color:#555;margin:10px 0;font-size:.9rem;">— OR —</div>
@@ -472,6 +496,7 @@
 </div>
 <div id="mp-hud"><div style="color:#666;font-size:.7rem;letter-spacing:1px;margin-bottom:6px;">PLAYERS</div><div id="mp-hud-players"></div></div>
 
+<div class="toast" id="toast"></div>
 <div id="menu" class="menu-screen active"><div class="menu-content" id="menu-content"></div></div>
 </div>
 <script>
@@ -506,7 +531,7 @@ var Auth = {
   },
   async _loadProfile() {
     if (!this.user || !_supa) return;
-    const { data } = await _supa.from('profiles').select('*').eq('id', this.user.id).single();
+    const { data } = await _supa.from('profiles').select('*').eq('id', this.user.id).maybeSingle();
     this.profile = data;
   },
   switchTab(tab) {
@@ -548,7 +573,7 @@ var Auth = {
     const errEl = document.getElementById('username-error');
     if (name.length < 2) { errEl.textContent = 'Min 2 characters.'; return; }
     if (!/^[a-zA-Z0-9_]+$/.test(name)) { errEl.textContent = 'Letters/numbers/underscore only.'; return; }
-    const { error } = await _supa.rpc('create_profile', { p_user_id: this.user.id, p_username: name });
+    const { error } = await _supa.rpc('upsert_username', { p_username: name });
     if (error) { errEl.textContent = error.message.includes('unique') ? 'Username taken.' : error.message; return; }
     await this._loadProfile();
     document.getElementById('username-setup').classList.remove('show');
@@ -575,8 +600,9 @@ var CloudSave = {
   _timer: null,
   async syncOnLogin() {
     if (!_supa || !Auth.user) return;
+    const hadLocalProgress = Save.maxLvl > 0 || Save.money > 0 || Save.stats.deaths > 0;
     try {
-      const { data } = await _supa.from('user_saves').select('data').eq('user_id', Auth.user.id).single();
+      const { data } = await _supa.from('user_saves').select('data').eq('user_id', Auth.user.id).maybeSingle();
       if (data?.data) {
         const cloud = data.data;
         if ((cloud.maxLvl||0) > Save.maxLvl) Save.maxLvl = cloud.maxLvl;
@@ -586,11 +612,20 @@ var CloudSave = {
         if (cloud.times) { for (const [k,v] of Object.entries(cloud.times)) { if (!Save.times[k]||v<Save.times[k]) Save.times[k]=v; } }
         if (cloud.stars) Save.stars = [...new Set([...Save.stars, ...(cloud.stars||[])])];
         localStorage.setItem('nl20_ultimate', JSON.stringify(Save));
+        this._toast('<i class="fas fa-cloud-arrow-down"></i> Save synced');
+      } else if (hadLocalProgress) {
+        this._toast('<i class="fas fa-cloud-arrow-up"></i> Local save backed up to cloud!', 4000);
       }
     } catch(e) { console.warn('CloudSave sync error', e); }
     this.push();
     DailySync.load();
     Achievements.init();
+  },
+  _toast(msg, ms=2500) {
+    const el = document.getElementById('toast');
+    if (!el) return;
+    el.innerHTML = msg; el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), ms);
   },
   schedulePush() {
     if (!_supa || !Auth.isLoggedIn()) return;
@@ -614,14 +649,14 @@ var LB = {
   async submitTimeTrial(level, time_ms) {
     if (!_supa || !Auth.isLoggedIn()) return;
     try {
-      const { data: ex } = await _supa.from('time_trial_records').select('time_ms').eq('user_id', Auth.user.id).eq('level', level).single();
+      const { data: ex } = await _supa.from('time_trial_records').select('time_ms').eq('user_id', Auth.user.id).eq('level', level).maybeSingle();
       if (ex && ex.time_ms <= time_ms) return;
       await _supa.from('time_trial_records').upsert({ user_id: Auth.user.id, username: Auth.getUsername(), level, time_ms }, { onConflict: 'user_id,level' });
     } catch(e){}
   },
   async getEndlessTop(limit=25) {
     if (!_supa) return [];
-    const { data } = await _supa.from('endless_scores').select('username,score,created_at').order('score',{ascending:false}).limit(limit);
+    const { data } = await _supa.from('endless_best').select('username,score,created_at').order('score',{ascending:false}).limit(limit);
     return data || [];
   },
   async getSpeedrunTop(limit=25) {
@@ -676,7 +711,7 @@ var Ghost = {
     if(!_supa) return;
     try {
       const { data } = await _supa.from('ghost_runs')
-        .select('username,score,path').order('score',{ascending:false}).limit(1).single();
+        .select('username,score,path').order('score',{ascending:false}).limit(1).maybeSingle();
       if(data?.path) {
         this.replay = data.path; this.replayName = data.username; this.replayScore = data.score;
       }
@@ -688,7 +723,7 @@ var Ghost = {
     // Only upload if this beats the user's own stored ghost
     try {
       const { data: ex } = await _supa.from('ghost_runs')
-        .select('score').eq('user_id', Auth.user.id).single();
+        .select('score').eq('user_id', Auth.user.id).maybeSingle();
       if(ex && ex.score >= score) return; // not a new PB
       await _supa.from('ghost_runs').upsert({
         user_id: Auth.user.id, username: Auth.getUsername(),
@@ -768,7 +803,7 @@ var DailySync = {
     const today = new Date().toISOString().slice(0,10);
     try {
       const { data } = await _supa.from('daily_completions')
-        .select('task_ids').eq('user_id', Auth.user.id).eq('challenge_date', today).single();
+        .select('task_ids').eq('user_id', Auth.user.id).eq('challenge_date', today).maybeSingle();
       if(data?.task_ids?.length) {
         // Mark any cloud-completed tasks as done locally too
         Save.daily.tasks.forEach(t => {
@@ -1023,8 +1058,8 @@ var Game={
     renderMain(){
   const userBar=Auth.isLoggedIn()
     ?`<div class="auth-user-bar show"><div class="auth-avatar">${Auth.getUsername()[0].toUpperCase()}</div><span style="flex:1">${Auth.getUsername()}</span><button class="btn-small" onclick="Auth.logout()" style="font-size:.75rem;padding:4px 10px;">LOGOUT</button></div>`
-    :`<button class="btn" onclick="document.getElementById('auth-overlay').classList.add('show')" style="min-width:200px;padding:12px 30px;margin-bottom:5px;">🌐 SIGN IN</button>`;
-  let h=`<h1>NEON <span>LEAP</span></h1><h2>ULTIMATE STATS</h2>${userBar}<div class="mode-select"><div class="mode-card" onclick="Game.renderLevels(MODE.NORMAL)"><h3>ADVENTURE</h3><p>Relaxed pace.</p></div><div class="mode-card" onclick="Game.renderLevels(MODE.TIME)"><h3>TIME TRIAL</h3><p>Race against the clock.</p></div><div class="mode-card" onclick="startGame(0,MODE.ENDLESS)"><h3>ENDLESS</h3><p>One life.</p></div><div class="mode-card" style="border-color:#00f1ff" onclick="MP.openLobby()"><h3 style="color:#00f1ff">⚡ MULTI</h3><p>Play with friends.</p></div></div><button class="btn btn-primary" onclick="Game.renderStats()">PROFILE &amp; STATS</button><button class="btn btn-rare" onclick="Game.renderShop()">SHOP</button><button class="btn btn-accent" onclick="Game.renderLeaderboard('endless')">🏆 LEADERBOARD</button><button class="btn" onclick="Game.renderChal()">CHALLENGES</button><button class="btn" onclick="Game.renderAchievements()">🎖️ ACHIEVEMENTS</button><button class="btn" onclick="Game.renderSettings()">SETTINGS</button>`;
+    :`<button class="btn" onclick="document.getElementById('auth-overlay').classList.add('show')" style="min-width:200px;padding:12px 30px;margin-bottom:5px;"><i class="fas fa-globe"></i> SIGN IN</button>`;
+  let h=`<h1>NEON <span>LEAP</span></h1><h2>ULTIMATE STATS</h2>${userBar}<div class="mode-select"><div class="mode-card" onclick="Game.renderLevels(MODE.NORMAL)"><h3>ADVENTURE</h3><p>Relaxed pace.</p></div><div class="mode-card" onclick="Game.renderLevels(MODE.TIME)"><h3>TIME TRIAL</h3><p>Race against the clock.</p></div><div class="mode-card" onclick="startGame(0,MODE.ENDLESS)"><h3>ENDLESS</h3><p>One life.</p></div><div class="mode-card" style="border-color:#00f1ff" onclick="MP.openLobby()"><h3 style="color:#00f1ff"><i class="fas fa-bolt"></i> MULTI</h3><p>Play with friends.</p></div></div><button class="btn btn-primary" onclick="Game.renderStats()"><i class="fas fa-user"></i> PROFILE</button><button class="btn btn-rare" onclick="Game.renderShop()"><i class="fas fa-store"></i> SHOP</button><button class="btn btn-accent" onclick="Game.renderLeaderboard('endless')"><i class="fas fa-trophy"></i> LEADERBOARD</button><button class="btn" onclick="Game.renderProgress('daily')"><i class="fas fa-list-check"></i> PROGRESS</button><button class="btn" onclick="Game.renderSettings()"><i class="fas fa-gear"></i> SETTINGS</button>`;
   document.getElementById('menu-content').innerHTML=h;
 },
     renderSettings(){let h=`<h2>SETTINGS</h2><div class="settings-section"><h3>AUDIO</h3><div class="settings-row"><span>MUSIC</span> <div style="display:flex;align-items:center;gap:10px;"><input type="range" min="0" max="100" value="${Math.round(Save.volMusic*100)}" oninput="Game.setMusicVol(this.value)"> <span id="val-music">${Math.round(Save.volMusic*100)}</span>%</div></div><div class="settings-row"><span>SFX</span> <div style="display:flex;align-items:center;gap:10px;"><input type="range" min="0" max="100" value="${Math.round(Save.volSfx*100)}" oninput="Game.setSfxVol(this.value)"> <span id="val-sfx">${Math.round(Save.volSfx*100)}</span>%</div></div></div><div class="settings-section"><h3>DISPLAY</h3><div class="settings-row"><span>THEME</span> <button class="btn-small" onclick="Game.toggleLight()">${Save.light?'LIGHT ☀':'DARK ☾'}</button></div><div class="settings-row"><span>SCREEN</span> <button class="btn-small" onclick="Game.toggleFS()">FULLSCREEN ⛶</button></div><div class="settings-row"><span>FPS</span> <button class="btn-small" onclick="Game.toggleFPS()">${Save.showFPS?'ON':'OFF'}</button></div><div class="settings-row"><span>SHAKE</span> <button class="btn-small" onclick="Game.toggleShake()">${Save.shake?'ON':'OFF'}</button></div><div class="settings-row"><span>PARTICLES</span> <button class="btn-small" onclick="Game.togglePart()">${Save.particles?'ON':'OFF'}</button></div><div class="settings-row"><span>SIMPLE BG</span> <button class="btn-small" onclick="Game.toggleBG()">${Save.simpleBG?'ON':'OFF'}</button></div></div><div class="settings-section pc-only"><h3>CONTROLS</h3><div class="settings-row"><span>LEFT</span><button class="key-btn" onclick="Game.bindKey('left', this)">${CFG.keys.left}</button></div><div class="settings-row"><span>RIGHT</span><button class="key-btn" onclick="Game.bindKey('right', this)">${CFG.keys.right}</button></div><div class="settings-row"><span>JUMP</span><button class="key-btn" onclick="Game.bindKey('jump', this)">${CFG.keys.jump}</button></div><div class="settings-row"><span>DASH</span><button class="key-btn" onclick="Game.bindKey('dash', this)">${CFG.keys.dash}</button></div><div class="settings-row"><span>CHRONO</span><button class="key-btn" onclick="Game.bindKey('chrono', this)">${CFG.keys.chrono}</button></div></div><button class="btn" onclick="Game.renderMain()">BACK</button>`;document.getElementById('menu-content').innerHTML=h;document.getElementById('menu-content').scrollTop=0;},
@@ -1059,7 +1094,7 @@ var Game={
         <h3>BEST ENDLESS RUNS</h3>
         <div class="records-list" style="margin-bottom:30px;">${lbHTML}</div>
 
-        <h3>TIME TRIAL RECORDS</h3><div class="records-list">${recs}</div><br><button class="btn btn-rare" onclick="Game.renderAchievements()">🎖️ ACHIEVEMENTS</button><button class="btn" onclick="Game.menu()">BACK</button></div>`;
+        <h3>TIME TRIAL RECORDS</h3><div class="records-list">${recs}</div><br><button class="btn btn-rare" onclick="Game.renderProgress('achievements')"><i class="fas fa-medal"></i> ACHIEVEMENTS</button><button class="btn" onclick="Game.menu()">BACK</button></div>`;
         document.getElementById('menu-content').innerHTML=h;document.getElementById('menu-content').scrollTop=0;
     },
     renderChal(){
@@ -1151,29 +1186,88 @@ var Game={
     redeemCode(){let code=document.getElementById('coupon-in').value.toUpperCase().trim();let valid={"NEON2024":1000,"START":500,"SPEED":300,"JUMP":300,"LD_15":1000000000};if(Save.codes.includes(code)){alert("Code already used!");return;}if(valid[code]){Save.codes.push(code);Save.money+=valid[code];alert("Redeemed: "+(valid[code]>100000?"UNLIMITED POWER!":valid[code]+" Coins!"));save();Game.renderShop();}else alert("Invalid Code");},
     curColor:"#ffffff",setPalette(c,el){Game.curColor=c;document.getElementById('cur-color').style.background=c;document.querySelectorAll('.color-swatch').forEach(e=>e.classList.remove('active'));if(el)el.classList.add('active');},
     pixelClick(idx){Save.customSkin.pixels[idx]=Game.curColor;save();let cell=document.getElementById('px-cell-'+idx);if(cell)cell.style.background=Game.curColor;},
-  renderAchievements(){
-    const total=ACHIEV_DEFS.length;
-    const got=Achievements.unlocked.size;
-    let cards='';
-    ACHIEV_DEFS.forEach(a=>{
-      const done=Achievements.unlocked.has(a.id);
-      cards+=`<div class="chal-card ${done?'done':''}" style="opacity:${done?1:0.45}">
-        <div class="chal-icon-box">${done?a.ic:'🔒'}</div>
-        <div class="chal-text"><div class="chal-title">${done?a.n:'???'}</div><div class="chal-desc">${done?a.d:'Keep playing to unlock'}</div></div>
-        <div class="chal-meta"><div class="chal-status" style="color:${done?'var(--c-rare)':'#555'}">${done?'UNLOCKED':'LOCKED'}</div></div>
-      </div>`;
-    });
-    document.getElementById('menu-content').innerHTML=`<h2>🎖️ ACHIEVEMENTS</h2>
-      <div style="color:var(--c-rare);font-size:1.2rem;font-weight:bold;margin-bottom:20px;">${got} / ${total} UNLOCKED</div>
-      <div style="width:100%;max-width:800px;">${cards}</div>
-      <br><button class="btn" onclick="Game.menu()">BACK</button>`;
+  renderAchievements(){ this.renderProgress('achievements'); },
+
+  renderProgress(tab='daily'){
+    const _esc=s=>String(s).replace(/[<>&"]/g,ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch]));
+    const now=new Date(),end=new Date();end.setHours(24,0,0,0);
+    const diff=end-now,hL=Math.floor(diff/3600000),mL=Math.floor((diff%3600000)/60000);
+    const tabs=[
+      {id:'daily',label:'<i class="fas fa-calendar-day"></i> DAILY'},
+      {id:'challenges',label:'<i class="fas fa-list-check"></i> CHALLENGES'},
+      {id:'achievements',label:'<i class="fas fa-medal"></i> ACHIEVEMENTS'}
+    ];
+    const tabBar=tabs.map(t=>`<button class="prog-tab ${tab===t.id?'active':''}" onclick="Game.renderProgress('${t.id}')">${t.label}</button>`).join('');
+    let inner='';
+    if(tab==='daily'){
+      inner=`<div style="color:var(--c-primary);font-weight:bold;margin-bottom:15px;font-size:1.1rem;"><i class="fas fa-clock"></i> RESETS IN ${hL}H ${mL}M</div>`;
+      Save.daily.tasks.forEach(task=>{
+        const def=DAILY_DEFS.find(d=>d.id===task.id);if(!def)return;
+        const prog=Math.min(100,(task.p/def.goal)*100);
+        inner+=`<div class="chal-card ${task.c?'done':''}"><div class="chal-progress-bg"><div class="chal-progress-fill" style="width:${prog}%"></div></div><div class="chal-icon-box" style="color:var(--c-accent)"><i class="fas fa-sun"></i></div><div class="chal-text"><div class="chal-title">${_esc(def.n)}</div><div class="chal-desc">${_esc(def.d)}</div></div><div class="chal-meta"><div class="chal-status">${task.c?'<i class="fas fa-check" style="color:var(--c-success)"></i> DONE':prog.toFixed(0)+'%'}</div><div class="chal-reward">+${def.r} &#x20B3;</div></div></div>`;
+      });
+    } else if(tab==='challenges'){
+      DB.challenges.forEach(c_=>{
+        const done=Save.chals.includes(c_.id);const prog=Math.min(100,(Save.stats[c_.stat]/c_.goal)*100);
+        inner+=`<div class="chal-card ${done?'done':''}"><div class="chal-progress-bg"><div class="chal-progress-fill" style="width:${prog}%"></div></div><div class="chal-icon-box" style="color:var(--c-primary)"><i class="fas fa-flag-checkered"></i></div><div class="chal-text"><div class="chal-title">${_esc(c_.n)}</div><div class="chal-desc">${_esc(c_.d)}</div></div><div class="chal-meta"><div class="chal-status">${done?'<i class="fas fa-check" style="color:var(--c-success)"></i> DONE':prog.toFixed(0)+'%'}</div><div class="chal-reward">+${c_.r} &#x20B3;</div></div></div>`;
+      });
+    } else {
+      const total=ACHIEV_DEFS.length,got=Achievements.unlocked.size;
+      inner=`<div style="color:var(--c-rare);font-weight:bold;margin-bottom:15px;"><i class="fas fa-medal"></i> ${got} / ${total} UNLOCKED</div>`;
+      ACHIEV_DEFS.forEach(a=>{
+        const done=Achievements.unlocked.has(a.id);
+        inner+=`<div class="chal-card ${done?'done':''}" style="opacity:${done?1:.45}"><div class="chal-icon-box" style="color:${done?'var(--c-rare)':'#555'}"><i class="fas ${done?'fa-medal':'fa-lock'}"></i></div><div class="chal-text"><div class="chal-title">${done?_esc(a.n):'???'}</div><div class="chal-desc">${done?_esc(a.d):'Keep playing to unlock'}</div></div><div class="chal-meta"><div class="chal-status" style="color:${done?'var(--c-rare)':'#555'}">${done?'UNLOCKED':'LOCKED'}</div></div></div>`;
+      });
+      if(_supa&&Auth.isLoggedIn()) Achievements.init().then(()=>{
+        const mc=document.getElementById('menu-content');
+        if(mc&&mc.querySelector('.prog-tab.active[onclick*=achievements]')) this.renderProgress('achievements');
+      });
+    }
+    document.getElementById('menu-content').innerHTML=`<h2><i class='fas fa-list-check'></i> PROGRESS</h2><div class="prog-tabs">${tabBar}</div><div style="width:100%;max-width:800px;">${inner}</div><br><button class="btn" onclick="Game.menu()">BACK</button>`;
     document.getElementById('menu-content').scrollTop=0;
-    // Re-init from DB in case new ones arrived on another device
-    Achievements.init().then(()=>this.renderAchievements&&null);
+  },
+
+  async renderUserProfile(username){
+    const _esc=s=>String(s).replace(/[<>&"]/g,ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch]));
+    const safe=_esc(username);
+    document.getElementById('menu-content').innerHTML=`<h2><i class='fas fa-user'></i> PLAYER PROFILE</h2><div style="color:#555;padding:30px;"><i class='fas fa-spinner fa-spin'></i> Loading ${safe}...</div>`;
+    document.getElementById('menu-content').scrollTop=0;
+    if(!_supa){
+      document.getElementById('menu-content').innerHTML=`<h2><i class='fas fa-user'></i> PLAYER PROFILE</h2><div style="color:var(--c-danger);padding:20px;">Not connected.</div><br><button class="btn" onclick="Game.renderLeaderboard()"><i class='fas fa-arrow-left'></i> BACK</button>`;
+      return;
+    }
+    try {
+      const {data,error}=await _supa.rpc('get_user_public_profile',{p_username:username});
+      if(error||!data){
+        document.getElementById('menu-content').innerHTML=`<h2><i class='fas fa-user'></i> PLAYER PROFILE</h2><div style="color:var(--c-danger);padding:20px;"><i class='fas fa-circle-exclamation'></i> Player not found.</div><br><button class="btn" onclick="Game.renderLeaderboard()"><i class='fas fa-arrow-left'></i> BACK</button>`;
+        return;
+      }
+      const d=typeof data==='string'?JSON.parse(data):data;
+      const isYou=Auth.isLoggedIn()&&Auth.getUsername().toLowerCase()===username.toLowerCase();
+      const fmt=ms=>{const m=Math.floor(ms/60000),s=Math.floor((ms%60000)/1000),x=Math.floor((ms%1000)/10);return(m<10?'0'+m:m)+':'+(s<10?'0'+s:s)+':'+(x<10?'0'+x:x);};
+      document.getElementById('menu-content').innerHTML=`
+        <h2><i class='fas fa-user'></i> PLAYER PROFILE</h2>
+        <div class="profile-card">
+          <div class="profile-avatar">${safe[0].toUpperCase()}</div>
+          <div class="profile-username">${safe}${isYou?' <span style="font-size:1rem;color:var(--c-primary);font-style:normal">(YOU)</span>':''}</div>
+          <div class="profile-since"><i class="fas fa-calendar"></i> SINCE ${new Date(d.member_since||Date.now()).toLocaleDateString()}</div>
+          <div class="stats-grid" style="text-align:left;margin-bottom:0;">
+            <div class="stat-card highlight"><div class="stat-val">${d.best_endless}m</div><div class="stat-label"><i class="fas fa-infinity"></i> Best Endless</div></div>
+            <div class="stat-card"><div class="stat-val">${d.total_runs}</div><div class="stat-label"><i class="fas fa-rotate-right"></i> Total Runs</div></div>
+            <div class="stat-card"><div class="stat-val">${d.levels_completed}</div><div class="stat-label"><i class="fas fa-flag-checkered"></i> Levels Timed</div></div>
+            <div class="stat-card"><div class="stat-val">${Number(d.best_total_time)>0?fmt(Number(d.best_total_time)):'—'}</div><div class="stat-label"><i class="fas fa-stopwatch"></i> Total Speedrun</div></div>
+            <div class="stat-card"><div class="stat-val">${d.achievements_count} / ${ACHIEV_DEFS.length}</div><div class="stat-label"><i class="fas fa-medal"></i> Achievements</div></div>
+          </div>
+        </div>
+        <br><button class="btn" onclick="Game.renderLeaderboard('endless')"><i class='fas fa-arrow-left'></i> BACK</button>`;
+      document.getElementById('menu-content').scrollTop=0;
+    } catch(e){
+      document.getElementById('menu-content').innerHTML=`<h2><i class='fas fa-user'></i> PLAYER PROFILE</h2><div style="color:var(--c-danger);padding:20px;"><i class='fas fa-circle-exclamation'></i> Error loading profile.</div><br><button class="btn" onclick="Game.renderLeaderboard()"><i class='fas fa-arrow-left'></i> BACK</button>`;
+    }
   },
   async renderLeaderboard(type='endless'){
     const you=Auth.isLoggedIn()?Auth.getUsername():null;
-    document.getElementById('menu-content').innerHTML=`<h2>🏆 LEADERBOARD</h2><div class="lb-tabs"><button class="lb-tab ${type==='endless'?'active':''}" onclick="Game.renderLeaderboard('endless')">ENDLESS</button><button class="lb-tab ${type==='time'?'active':''}" onclick="Game.renderLeaderboard('time')">SPEEDRUN</button></div><div id="lb-content" style="width:100%;max-width:700px;"><div style="color:#666;padding:30px;">Loading...</div></div><br><button class="btn" onclick="Game.menu()">BACK</button>`;
+    document.getElementById('menu-content').innerHTML=`<h2><i class='fas fa-trophy'></i> LEADERBOARD</h2><div class="lb-tabs"><button class="lb-tab ${type==='endless'?'active':''}" onclick="Game.renderLeaderboard('endless')"><i class='fas fa-infinity'></i> ENDLESS</button><button class="lb-tab ${type==='time'?'active':''}" onclick="Game.renderLeaderboard('time')"><i class='fas fa-clock'></i> SPEEDRUN</button></div><div id="lb-content" style="width:100%;max-width:700px;"><div style="color:#666;padding:30px;">Loading...</div></div><br><button class="btn" onclick="Game.menu()">BACK</button>`;
     document.getElementById('menu-content').scrollTop=0;
     const el=document.getElementById('lb-content');
     if(!_supa){el.innerHTML='<div style="color:var(--c-danger);padding:20px;">Not connected.</div>';return;}
@@ -1181,13 +1275,13 @@ var Game={
       const rows=await LB.getEndlessTop(25);
       if(!rows.length){el.innerHTML='<div style="color:#666;padding:20px;">No scores yet. Be the first!</div>';return;}
       let h=`<table class="lb-table"><thead><tr><th>#</th><th>PLAYER</th><th>SCORE</th><th>DATE</th></tr></thead><tbody>`;
-      rows.forEach((r,i)=>{const iy=you&&r.username===you;h+=`<tr class="${i===0?'lb-rank-1':i===1?'lb-rank-2':i===2?'lb-rank-3':''} ${iy?'lb-you':''}"><td>${i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1)}</td><td>${r.username}${iy?' ◀':''}</td><td>${r.score}m</td><td>${new Date(r.created_at).toLocaleDateString()}</td></tr>`;});
+      rows.forEach((r,i)=>{const iy=you&&r.username===you;const esc=s=>s.replace(/[<>&"]/g,ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch]));const medal=i===0?'<i class="fas fa-medal" style="color:#ffd700"></i>':i===1?'<i class="fas fa-medal" style="color:#c0c0c0"></i>':i===2?'<i class="fas fa-medal" style="color:#cd7f32"></i>':'#'+(i+1);const safe=esc(r.username);h+=`<tr class="${i===0?'lb-rank-1':i===1?'lb-rank-2':i===2?'lb-rank-3':''} ${iy?'lb-you':''}"><td>${medal}</td><td><span class="lb-username" onclick="Game.renderUserProfile('${safe}')">${safe}</span>${iy?' <i class="fas fa-caret-left" style="font-size:.7rem;margin-left:4px"></i>':''}</td><td>${r.score}m</td><td>${new Date(r.created_at).toLocaleDateString()}</td></tr>`;});
       el.innerHTML=h+'</tbody></table>';
     } else {
       const rows=await LB.getSpeedrunTop(25);
       if(!rows.length){el.innerHTML='<div style="color:#666;padding:20px;">No records yet.</div>';return;}
       let h=`<div style="color:#888;font-size:.85rem;margin-bottom:15px;">Sum of personal bests across all levels</div><table class="lb-table"><thead><tr><th>#</th><th>PLAYER</th><th>LEVELS</th><th>TOTAL TIME</th></tr></thead><tbody>`;
-      rows.forEach((r,i)=>{const iy=you&&r.username===you;const t=Number(r.total_ms);const m=Math.floor(t/60000);const s=Math.floor((t%60000)/1000);const ms=Math.floor((t%1000)/10);h+=`<tr class="${i===0?'lb-rank-1':i===1?'lb-rank-2':i===2?'lb-rank-3':''} ${iy?'lb-you':''}"><td>${i===0?'🥇':i===1?'🥈':i===2?'🥉':'#'+(i+1)}</td><td>${r.username}${iy?' ◀':''}</td><td>${r.level_count}</td><td>${m<10?'0'+m:m}:${s<10?'0'+s:s}:${ms<10?'0'+ms:ms}</td></tr>`;});
+      rows.forEach((r,i)=>{const iy=you&&r.username===you;const esc=s=>s.replace(/[<>&"]/g,ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch]));const medal=i===0?'<i class="fas fa-medal" style="color:#ffd700"></i>':i===1?'<i class="fas fa-medal" style="color:#c0c0c0"></i>':i===2?'<i class="fas fa-medal" style="color:#cd7f32"></i>':'#'+(i+1);const t=Number(r.total_ms);const m=Math.floor(t/60000);const s=Math.floor((t%60000)/1000);const ms=Math.floor((t%1000)/10);const safe=esc(r.username);h+=`<tr class="${i===0?'lb-rank-1':i===1?'lb-rank-2':i===2?'lb-rank-3':''} ${iy?'lb-you':''}"><td>${medal}</td><td><span class="lb-username" onclick="Game.renderUserProfile('${safe}')">${safe}</span>${iy?' <i class="fas fa-caret-left" style="font-size:.7rem;margin-left:4px"></i>':''}</td><td>${r.level_count}</td><td>${m<10?'0'+m:m}:${s<10?'0'+s:s}:${ms<10?'0'+ms:ms}</td></tr>`;});
       el.innerHTML=h+'</tbody></table>';
     }
   }
