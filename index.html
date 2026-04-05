@@ -1113,7 +1113,8 @@ var Auth = {
   _pwKeydown(event, inputId) {
     if (event.key === 'Enter') {
       if (inputId === 'auth-password' && this._tab === 'register') {
-        document.getElementById('auth-confirm').focus();
+        const confirm = document.getElementById('auth-confirm');
+        if (confirm) confirm.focus(); else this.submit();
       } else {
         this.submit();
       }
@@ -1518,7 +1519,14 @@ var DM = {
     const inp = document.getElementById('dm-input');
     const body = (inp?.value || '').trim();
     if (!body || !this._open || !_supa) return;
-    if (body.length > 300) return;
+    if (body.length > 300) {
+      const el = document.getElementById('dm-messages');
+      if (el) {
+        el.innerHTML += `<div class="dm-msg system" style="color:var(--c-danger);font-size:.78rem">Message too long (max 300 characters).</div>`;
+        el.scrollTop = el.scrollHeight;
+      }
+      return;
+    }
     inp.value = '';
     const { error } = await _supa.from('friend_messages').insert({ from_id: Auth.user.id, to_id: this._open.id, body });
     if (error) { console.warn('DM send failed', error.message); return; }
@@ -1583,7 +1591,8 @@ var Friends = {
   async remove(friendId, username){
     if(!_supa||!Auth.isLoggedIn())return;
     if(!confirm(`Remove ${username} from friends?`))return;
-    await _supa.rpc('remove_friend',{p_friend_id:friendId}).catch(()=>{});
+    const {error}=await _supa.rpc('remove_friend',{p_friend_id:friendId});
+    if(error){ CloudSave._toast(`<i class="fas fa-xmark"></i> Could not remove friend: ${error.message}`); return; }
     this._cache=null;
     this.renderPanel();
   },
@@ -1642,6 +1651,7 @@ var Friends = {
 
 const MP_COLORS = ['#00f1ff','#ff0055','#ffe900','#00ffaa','#a020f0','#ff6600','#ff69b4','#aaffaa'];
 const MP_EMOJIS = ['😂','💀','🔥','👑','😤','👋'];
+const MP_CHAT_MAX_MESSAGES = 50;
 var MP = {
   active:false, roomCode:null, isHost:false, channel:null,
   players:{}, myColor:'#00f1ff', myId:null,
@@ -1866,14 +1876,14 @@ var MP = {
   _sysChat(msg){
     const box=document.getElementById('mp-chat'); if(!box)return;
     box.innerHTML+=`<div class="mp-chat-msg system">${msg}</div>`;
-    while(box.children.length>50) box.removeChild(box.firstChild);
+    while(box.children.length>MP_CHAT_MAX_MESSAGES) box.removeChild(box.firstChild);
     box.scrollTop=box.scrollHeight;
   },
   _appendLobbyChat(username,msg,color,isMe){
     const box=document.getElementById('mp-chat'); if(!box)return;
     const safe=this._esc(msg);
     box.innerHTML+=`<div class="mp-chat-msg"><span class="mp-chat-who" style="color:${color}">${this._esc(username)}:</span> ${safe}</div>`;
-    while(box.children.length>50) box.removeChild(box.firstChild);
+    while(box.children.length>MP_CHAT_MAX_MESSAGES) box.removeChild(box.firstChild);
     box.scrollTop=box.scrollHeight;
   },
 
