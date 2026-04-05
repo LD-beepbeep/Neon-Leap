@@ -2080,7 +2080,7 @@ const elapsed=Math.floor((Date.now()-startTime)/1000);const mins=Math.floor(elap
 const timeEl=document.getElementById('endless-time-val');if(timeEl)timeEl.textContent=(mins>0?mins+'m ':'')+secs+'s';
 // Top runs
 let list = Save.highscores.slice(0,5).map((s,i)=>{
-    const medals=['🥇','🥈','🥉','4th','5th'];
+    const medals=['🥇','🥈','🥉','4️⃣','5️⃣'];
     const isNew=(i===0&&s===endlessScore);
     return `<div class="podium-rank ${i<3?'rank-'+(i+1):''}" style="${i>=3?'background:rgba(255,255,255,.04);border:1px solid #1a1e28;border-radius:4px;':''}${isNew?'animation:pulseRecord .5s infinite alternate;':''}"><span style="opacity:.6">${medals[i]}</span><span>${s}m${isNew?' <span style="font-size:.7rem;color:var(--c-accent)">NEW!</span>':''}</span></div>`;
 }).join('');
