@@ -358,7 +358,12 @@
   body.light-mode .auth-input{background:#f5f5f5;border-color:#ccc;color:#333;}
   .auth-input:focus{outline:none;border-color:var(--c-primary);}
   .auth-error{color:var(--c-danger);font-size:.85rem;margin-bottom:10px;min-height:20px;}
-  
+  .auth-pw-wrap{position:relative;margin-bottom:12px;}
+  .auth-pw-wrap .auth-input{margin-bottom:0;padding-right:44px;}
+  .auth-pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#555;cursor:pointer;font-size:.95rem;padding:4px;}
+  .auth-pw-toggle:hover{color:var(--c-primary);}
+  .auth-forgot{display:block;text-align:right;font-size:.78rem;color:#555;cursor:pointer;margin:-6px 0 10px;background:none;border:none;font-family:inherit;padding:0;}
+  .auth-forgot:hover{color:var(--c-primary);}
   .auth-divider{color:#555;margin:12px 0;font-size:.85rem;}
   #username-setup{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.97);z-index:250;display:none;align-items:center;justify-content:center;}
   #username-setup.show{display:flex;}
@@ -803,12 +808,19 @@
       <button class="auth-tab active" onclick="Auth.switchTab('login')">LOGIN</button>
       <button class="auth-tab" onclick="Auth.switchTab('register')">REGISTER</button>
     </div>
-    <input type="email" id="auth-email" class="auth-input" placeholder="Email address"/>
-    <input type="password" id="auth-password" class="auth-input" placeholder="Password"/>
+    <input type="email" id="auth-email" class="auth-input" placeholder="Email address" autocomplete="email" onkeydown="if(event.key==='Enter')document.getElementById('auth-password').focus()"/>
+    <div class="auth-pw-wrap">
+      <input type="password" id="auth-password" class="auth-input" placeholder="Password" autocomplete="current-password" onkeydown="Auth._pwKeydown(event,'auth-password')"/>
+      <button type="button" class="auth-pw-toggle" onclick="Auth._togglePw('auth-password',this)" tabindex="-1" aria-label="Show password"><i class="fas fa-eye"></i></button>
+    </div>
+    <div class="auth-pw-wrap" id="auth-confirm-wrap" style="display:none">
+      <input type="password" id="auth-confirm" class="auth-input" placeholder="Confirm password" autocomplete="new-password" onkeydown="Auth._pwKeydown(event,'auth-confirm')"/>
+      <button type="button" class="auth-pw-toggle" onclick="Auth._togglePw('auth-confirm',this)" tabindex="-1" aria-label="Show password"><i class="fas fa-eye"></i></button>
+    </div>
+    <button type="button" class="auth-forgot" id="auth-forgot-btn" onclick="Auth.forgotPassword()">Forgot password?</button>
     <div id="auth-error" class="auth-error"></div>
     <button class="btn btn-primary" id="auth-submit-btn" onclick="Auth.submit()" style="min-width:100%;margin:0;padding:18px;"><i class="fas fa-right-to-bracket"></i> LOGIN</button>
     <button class="btn" onclick="Auth.skip()" style="min-width:100%;margin:8px 0 0;padding:14px;"><i class="fas fa-play"></i> PLAY OFFLINE</button>
-    <p style="color:#333;font-size:.75rem;margin:14px 0 0;line-height:1.5;">Problems logging in? In your Supabase dashboard go to<br><b>Authentication → Providers → Email</b> and turn off <b>Confirm email</b>.</p>
   </div>
 </div>
 <div id="username-setup">
@@ -1082,18 +1094,41 @@ var Auth = {
     document.getElementById('auth-submit-btn').innerHTML = tab === 'login'
       ? '<i class="fas fa-right-to-bracket"></i> LOGIN'
       : '<i class="fas fa-user-plus"></i> CREATE ACCOUNT';
+    const confirmWrap = document.getElementById('auth-confirm-wrap');
+    if (confirmWrap) confirmWrap.style.display = tab === 'register' ? 'block' : 'none';
+    const forgotBtn = document.getElementById('auth-forgot-btn');
+    if (forgotBtn) forgotBtn.style.display = tab === 'login' ? 'block' : 'none';
+    const pwInput = document.getElementById('auth-password');
+    if (pwInput) pwInput.setAttribute('autocomplete', tab === 'login' ? 'current-password' : 'new-password');
     const errEl = document.getElementById('auth-error');
     errEl.textContent = ''; errEl.style.color = 'var(--c-danger)';
+  },
+  _togglePw(inputId, btn) {
+    const inp = document.getElementById(inputId);
+    if (!inp) return;
+    const show = inp.type === 'password';
+    inp.type = show ? 'text' : 'password';
+    btn.innerHTML = show ? '<i class="fas fa-eye-slash"></i>' : '<i class="fas fa-eye"></i>';
+  },
+  _pwKeydown(event, inputId) {
+    if (event.key === 'Enter') {
+      if (inputId === 'auth-password' && this._tab === 'register') {
+        const confirm = document.getElementById('auth-confirm');
+        if (confirm) confirm.focus(); else this.submit();
+      } else {
+        this.submit();
+      }
+    }
   },
   _friendlyError(msg) {
     if (!msg) return 'Something went wrong.';
     const m = msg.toLowerCase();
     if (m.includes('invalid login') || m.includes('invalid credentials'))
-      return 'Wrong email or password. If you just registered, check your inbox for a confirmation link — or disable "Confirm email" in your Supabase dashboard.';
+      return 'Wrong email or password. Try again or use "Forgot password?" below.';
     if (m.includes('email not confirmed'))
-      return 'Please confirm your email first. Check your inbox for a link from Supabase.';
+      return 'Please confirm your email first. Check your inbox for a link.';
     if (m.includes('rate limit') || m.includes('email rate'))
-      return 'Too many emails sent. Wait an hour, or disable "Confirm email" in your Supabase dashboard → Auth → Providers → Email.';
+      return 'Too many attempts. Please wait a moment and try again.';
     if (m.includes('user already registered') || m.includes('already been registered'))
       return 'An account with this email already exists. Try logging in instead.';
     if (m.includes('password') && m.includes('characters'))
@@ -1113,6 +1148,10 @@ var Auth = {
     errEl.style.color = 'var(--c-danger)';
     if (!email || !pw) { errEl.textContent = 'Fill in all fields.'; return; }
     if (pw.length < 6) { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+    if (this._tab === 'register') {
+      const confirm = document.getElementById('auth-confirm').value;
+      if (pw !== confirm) { errEl.textContent = 'Passwords do not match.'; return; }
+    }
     const btn = document.getElementById('auth-submit-btn');
     const origLabel = btn.innerHTML;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'; btn.disabled = true;
@@ -1133,6 +1172,21 @@ var Auth = {
       }
     } catch(e) { errEl.textContent = this._friendlyError(e.message); }
     btn.innerHTML = origLabel; btn.disabled = false;
+  },
+  async forgotPassword() {
+    const email = document.getElementById('auth-email').value.trim();
+    const errEl = document.getElementById('auth-error');
+    errEl.textContent = ''; errEl.style.color = 'var(--c-danger)';
+    if (!email) { errEl.textContent = 'Enter your email address first.'; return; }
+    if (!_supa) { errEl.textContent = 'Offline — cannot send reset email.'; return; }
+    const btn = document.getElementById('auth-forgot-btn');
+    const orig = btn.textContent; btn.textContent = 'Sending…'; btn.disabled = true;
+    try {
+      const { error } = await _supa.auth.resetPasswordForEmail(email, { redirectTo: window.location.href });
+      if (error) { errEl.textContent = this._friendlyError(error.message); }
+      else { errEl.style.color = 'var(--c-success)'; errEl.textContent = 'Password reset email sent! Check your inbox.'; }
+    } catch(e) { errEl.textContent = this._friendlyError(e.message); }
+    btn.textContent = orig; btn.disabled = false;
   },
   skip() { document.getElementById('auth-overlay').classList.remove('show'); },
   _showUsernameSetup() {
@@ -1453,7 +1507,9 @@ var DM = {
       const el = document.getElementById('dm-messages');
       if (!el) return;
       const safe = String(payload.body).replace(/[<>&"]/g, ch => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch]));
-      el.innerHTML += `<div class="dm-msg theirs">${safe}<div class="dm-msg-time">now</div></div>`;
+      const now = new Date();
+      const ts = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+      el.innerHTML += `<div class="dm-msg theirs">${safe}<div class="dm-msg-time">${ts}</div></div>`;
       el.scrollTop = el.scrollHeight;
     });
     this._channel.subscribe();
@@ -1463,13 +1519,23 @@ var DM = {
     const inp = document.getElementById('dm-input');
     const body = (inp?.value || '').trim();
     if (!body || !this._open || !_supa) return;
+    if (body.length > 300) {
+      const el = document.getElementById('dm-messages');
+      if (el) {
+        el.innerHTML += `<div class="dm-msg system" style="color:var(--c-danger);font-size:.78rem">Message too long (max 300 characters).</div>`;
+        el.scrollTop = el.scrollHeight;
+      }
+      return;
+    }
     inp.value = '';
     const { error } = await _supa.from('friend_messages').insert({ from_id: Auth.user.id, to_id: this._open.id, body });
     if (error) { console.warn('DM send failed', error.message); return; }
     const el = document.getElementById('dm-messages');
     if (el) {
       const safe = body.replace(/[<>&"]/g, ch => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch]));
-      el.innerHTML += `<div class="dm-msg mine">${safe}<div class="dm-msg-time">now</div></div>`;
+      const now = new Date();
+      const ts = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+      el.innerHTML += `<div class="dm-msg mine">${safe}<div class="dm-msg-time">${ts}</div></div>`;
       el.scrollTop = el.scrollHeight;
     }
     if (this._channel) this._channel.send({ type: 'broadcast', event: 'msg', payload: { body, from: Auth.getUsername() } });
@@ -1520,6 +1586,15 @@ var Friends = {
     if(!_supa||!Auth.isLoggedIn())return;
     await _supa.rpc('respond_friend_request',{p_requester_id:requesterId,p_accept:accept});
     this._cache=null;
+    this.renderPanel();
+  },
+  async remove(friendId, username){
+    if(!_supa||!Auth.isLoggedIn())return;
+    if(!confirm(`Remove ${username} from friends?`))return;
+    const {error}=await _supa.rpc('remove_friend',{p_friend_id:friendId});
+    if(error){ CloudSave._toast(`<i class="fas fa-xmark"></i> Could not remove friend: ${error.message}`); return; }
+    this._cache=null;
+    this.renderPanel();
   },
   async renderPanel(){
     const _esc=s=>String(s).replace(/[<>&"]/g,ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch]));
@@ -1533,14 +1608,14 @@ var Friends = {
     const pending=list.filter(f=>f.status==='pending'&&f.direction==='received');
     const sent=list.filter(f=>f.status==='pending'&&f.direction==='sent');
     const accepted=list.filter(f=>f.status==='accepted');
-    let h=`<div style="display:flex;gap:8px;margin-bottom:20px;"><input type="text" id="friend-add-input" class="auth-input" placeholder="Username to add..." style="flex:1;margin:0;padding:10px 14px;font-size:.9rem"/><button class="btn-small" onclick="Friends.addFromInput()" style="padding:10px 16px;border-color:var(--c-primary);color:var(--c-primary)"><i class="fas fa-user-plus"></i> ADD</button></div><div id="friend-add-msg" style="font-size:.85rem;margin-bottom:12px;min-height:18px;"></div>`;
+    let h=`<div style="display:flex;gap:8px;margin-bottom:20px;"><input type="text" id="friend-add-input" class="auth-input" placeholder="Username to add..." style="flex:1;margin:0;padding:10px 14px;font-size:.9rem" onkeydown="if(event.key==='Enter')Friends.addFromInput()"/><button class="btn-small" onclick="Friends.addFromInput()" style="padding:10px 16px;border-color:var(--c-primary);color:var(--c-primary)"><i class="fas fa-user-plus"></i> ADD</button></div><div id="friend-add-msg" style="font-size:.85rem;margin-bottom:12px;min-height:18px;"></div>`;
     if(pending.length){
       h+=`<div style="font-size:.75rem;color:#555;letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">REQUESTS (${pending.length})</div>`;
       pending.forEach(f=>{h+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0d1018;border:1px solid rgba(0,241,255,.2);border-radius:6px;margin-bottom:6px"><div style="width:32px;height:32px;border-radius:50%;background:var(--c-primary);display:flex;align-items:center;justify-content:center;font-weight:900;color:#000">${_esc(f.username[0].toUpperCase())}</div><span style="flex:1;font-weight:700">${_esc(f.username)}</span><button class="btn-small" onclick="Friends.respond('${f.friend_id}',true)" style="border-color:var(--c-success);color:var(--c-success)"><i class="fas fa-check"></i></button><button class="btn-small" onclick="Friends.respond('${f.friend_id}',false)" style="border-color:var(--c-danger);color:var(--c-danger)"><i class="fas fa-xmark"></i></button></div>`;});
     }
     if(accepted.length){
       h+=`<div style="font-size:.75rem;color:#555;letter-spacing:2px;text-transform:uppercase;margin:14px 0 8px">FRIENDS (${accepted.length})</div>`;
-      accepted.forEach(f=>{const myBest=Save.stats.maxEndless||0;h+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0d1018;border:1px solid #1a1e28;border-radius:6px;margin-bottom:6px"><div style="width:36px;height:36px;border-radius:50%;background:var(--c-success);display:flex;align-items:center;justify-content:center;font-weight:900;color:#000;cursor:pointer;flex-shrink:0;font-size:.95rem" onclick="Game.renderUserProfile('${_esc(f.username)}')">${_esc(f.username[0].toUpperCase())}</div><div style="flex:1;min-width:0"><div style="font-weight:800;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="Game.renderUserProfile('${_esc(f.username)}')">${_esc(f.username)}</div><div style="font-family:monospace;color:var(--c-primary);font-size:.8rem"><i class="fas fa-infinity"></i> ${f.best_endless}m best</div></div><button class="btn-small" title="Challenge" onclick="Friends._challenge('${f.friend_id}','${_esc(f.username).replace(/'/g,"\\'")}')" style="border-color:var(--c-danger);color:var(--c-danger)"><i class="fas fa-crosshairs"></i></button><button class="btn-small" onclick="DM.open('${f.friend_id}','${_esc(f.username).replace(/'/g,"\\'")}','var(--c-success)')" style="border-color:var(--c-primary);color:var(--c-primary)"><i class="fas fa-comment"></i></button></div>`;});
+      accepted.forEach(f=>{h+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0d1018;border:1px solid #1a1e28;border-radius:6px;margin-bottom:6px"><div style="width:36px;height:36px;border-radius:50%;background:var(--c-success);display:flex;align-items:center;justify-content:center;font-weight:900;color:#000;cursor:pointer;flex-shrink:0;font-size:.95rem" onclick="Game.renderUserProfile('${_esc(f.username)}')">${_esc(f.username[0].toUpperCase())}</div><div style="flex:1;min-width:0"><div style="font-weight:800;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onclick="Game.renderUserProfile('${_esc(f.username)}')">${_esc(f.username)}</div><div style="font-family:monospace;color:var(--c-primary);font-size:.8rem"><i class="fas fa-infinity"></i> ${f.best_endless}m best</div></div><button class="btn-small" title="Challenge" onclick="Friends._challenge('${f.friend_id}','${_esc(f.username).replace(/'/g,"\\'")}')" style="border-color:var(--c-danger);color:var(--c-danger)"><i class="fas fa-crosshairs"></i></button><button class="btn-small" onclick="DM.open('${f.friend_id}','${_esc(f.username).replace(/'/g,"\\'")}','var(--c-success)')" style="border-color:var(--c-primary);color:var(--c-primary)"><i class="fas fa-comment"></i></button><button class="btn-small" title="Remove friend" onclick="Friends.remove('${f.friend_id}','${_esc(f.username).replace(/'/g,"\\'")}')" style="border-color:#333;color:#555"><i class="fas fa-user-minus"></i></button></div>`;});
     }
     if(sent.length){
       h+=`<div style="font-size:.75rem;color:#555;letter-spacing:2px;text-transform:uppercase;margin:14px 0 8px">SENT</div>`;
@@ -1572,23 +1647,16 @@ var Friends = {
     msg.style.color=result==='sent'||result==='accepted'?'var(--c-success)':'var(--c-danger)';
     if(result==='sent'||result==='accepted'){inp.value='';this.renderPanel();}
   },
-  async respond(friendId,accept){
-    await this.respond_internal(friendId,accept);
-    this.renderPanel();
-  },
-  async respond_internal(friendId,accept){
-    await _supa.rpc('respond_friend_request',{p_requester_id:friendId,p_accept:accept});
-    this._cache=null;
-  },
 };
 
 const MP_COLORS = ['#00f1ff','#ff0055','#ffe900','#00ffaa','#a020f0','#ff6600','#ff69b4','#aaffaa'];
 const MP_EMOJIS = ['😂','💀','🔥','👑','😤','👋'];
+const MP_CHAT_MAX_MESSAGES = 50;
 var MP = {
   active:false, roomCode:null, isHost:false, channel:null,
   players:{}, myColor:'#00f1ff', myId:null,
   _posInterval:null, _roomSeed:0, _results:[],
-  _spectating:false, _ingameChatOpen:false,
+  _spectating:false, _ingameChatOpen:false, _myReady:false,
 
   _esc(s){ return String(s).replace(/[<>&"]/g,ch=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[ch])); },
   _send(event,payload){ if(this.channel) this.channel.send({type:'broadcast',event,payload}); },
@@ -1606,6 +1674,7 @@ var MP = {
     this.roomCode = this._genCode();
     this._roomSeed = Date.now() % 999983;
     this.isHost = true;
+    this._myReady = false;
     this.players = {};
     await this._connect();
     this._showWaiting();
@@ -1615,6 +1684,7 @@ var MP = {
     if(code.length !== 4){ this._shakeInput(); return; }
     this.roomCode = code;
     this.isHost = false;
+    this._myReady = false;
     this.players = {};
     await this._connect();
     this._showWaiting();
@@ -1624,6 +1694,26 @@ var MP = {
     const el=document.getElementById('mp-join-code');
     el.style.borderColor='var(--c-danger)'; el.style.animation='shake .3s';
     setTimeout(()=>{el.style.borderColor=''; el.style.animation='';},400);
+  },
+
+  toggleReady(){
+    if(this.isHost) return;
+    this._myReady = !this._myReady;
+    if(this.players[this.myId]) this.players[this.myId].ready = this._myReady;
+    this._send('ready',{id:this.myId, ready:this._myReady});
+    this._updateLobby();
+  },
+
+  kickPlayer(playerId){
+    if(!this.isHost || playerId === this.myId) return;
+    this._send('kick',{id:playerId});
+    if(this.players[playerId]){
+      this._sysChat(`${this._esc(this.players[playerId].username)} was kicked`);
+      delete this.players[playerId];
+    }
+    this._updateLobby();
+    const startBtn=document.getElementById('mp-start-btn');
+    if(startBtn) startBtn.style.display=this.isHost&&Object.keys(this.players).length>=2?'flex':'none';
   },
 
   _connect(){
@@ -1642,12 +1732,14 @@ var MP = {
         .on('broadcast',{event:'chat'},   ({payload})=>this._onIngameChat(payload))
         .on('broadcast',{event:'emoji'},  ({payload})=>this._onEmoji(payload))
         .on('broadcast',{event:'leave'},  ({payload})=>this._onLeave(payload))
+        .on('broadcast',{event:'ready'},  ({payload})=>this._onReady(payload))
+        .on('broadcast',{event:'kick'},   ({payload})=>this._onKick(payload))
         .on('broadcast',{event:'lobby_chat'},({payload})=>this._onLobbyChatMsg(payload));
       this.channel.subscribe(status=>{
         if(status !== 'SUBSCRIBED') return;
         this.players[this.myId] = {
           username:Auth.getUsername(), color:this.myColor,
-          x:0, y:0, score:0, alive:true, isMe:true,
+          x:0, y:0, score:0, alive:true, isMe:true, ready:false,
           rank:typeof Game !== 'undefined' ? Game.getRank().t : ''
         };
         this._send('join',{
@@ -1666,7 +1758,7 @@ var MP = {
       this.players[p.id]={
         username:p.username, rank:p.rank||'',
         color:MP_COLORS.find(c=>!taken.includes(c))||MP_COLORS[1],
-        x:0,y:0,score:0,alive:true
+        x:0,y:0,score:0,alive:true,ready:false
       };
       this._send('join',{id:this.myId,username:Auth.getUsername(),color:this.myColor,rank:this.players[this.myId]?.rank||''});
       if(this.isHost) this._send('seed',{seed:this._roomSeed});
@@ -1686,6 +1778,16 @@ var MP = {
     this._updateLobby();
     this._updateHud();
     if(this.active) this._checkAllDead();
+  },
+  _onReady(p){
+    if(this.players[p.id]) this.players[p.id].ready = p.ready;
+    this._updateLobby();
+  },
+  _onKick(p){
+    if(p.id === this.myId){
+      this._sysChat('You were kicked from the room.');
+      this.leaveRoom();
+    }
   },
 
   _showWaiting(){
@@ -1729,17 +1831,27 @@ var MP = {
     if(countEl) countEl.textContent=count;
     list.innerHTML=Object.entries(this.players).map(([id,p])=>{
       const isMe=p.isMe;
-      const badge=isMe&&this.isHost
-        ?`<span class="mp-player-badge mp-host-badge"><i class="fas fa-crown"></i> HOST</span>`
-        :isMe?`<span class="mp-player-badge mp-ready-badge"><i class="fas fa-check"></i> READY</span>`
-        :`<span class="mp-player-badge mp-waiting-badge"><i class="fas fa-clock"></i> WAITING</span>`;
+      const isHost=isMe&&this.isHost;
+      let badge;
+      if(isHost){
+        badge=`<span class="mp-player-badge mp-host-badge"><i class="fas fa-crown"></i> HOST</span>`;
+      } else if(isMe){
+        badge=`<button class="mp-player-badge ${this._myReady?'mp-ready-badge':'mp-waiting-badge'}" onclick="MP.toggleReady()" style="cursor:pointer;border:none;font-family:inherit">
+          <i class="fas ${this._myReady?'fa-check':'fa-clock'}"></i> ${this._myReady?'READY':'CLICK TO READY'}
+        </button>`;
+      } else {
+        badge=`<span class="mp-player-badge ${p.ready?'mp-ready-badge':'mp-waiting-badge'}"><i class="fas ${p.ready?'fa-check':'fa-clock'}"></i> ${p.ready?'READY':'WAITING'}</span>`;
+      }
+      const kickBtn=this.isHost&&!isMe
+        ?`<button title="Kick" onclick="MP.kickPlayer('${id}')" style="background:none;border:none;color:#555;cursor:pointer;font-size:.9rem;padding:4px 6px;margin-left:4px"><i class="fas fa-ban"></i></button>`
+        :'';
       return `<div class="mp-player-card${isMe?' you':''}">
         <div class="mp-player-avatar" style="background:${p.color}">${this._esc(p.username[0].toUpperCase())}</div>
         <div class="mp-player-info">
           <div class="mp-player-card-name">${this._esc(p.username)}${isMe?' (YOU)':''}</div>
           <div class="mp-player-card-sub" style="color:${p.color};font-size:.7rem">${p.rank||'&nbsp;'}</div>
         </div>
-        ${badge}
+        ${badge}${kickBtn}
       </div>`;
     }).join('');
     if(!this.isHost){
@@ -1764,12 +1876,14 @@ var MP = {
   _sysChat(msg){
     const box=document.getElementById('mp-chat'); if(!box)return;
     box.innerHTML+=`<div class="mp-chat-msg system">${msg}</div>`;
+    while(box.children.length>MP_CHAT_MAX_MESSAGES) box.removeChild(box.firstChild);
     box.scrollTop=box.scrollHeight;
   },
   _appendLobbyChat(username,msg,color,isMe){
     const box=document.getElementById('mp-chat'); if(!box)return;
     const safe=this._esc(msg);
     box.innerHTML+=`<div class="mp-chat-msg"><span class="mp-chat-who" style="color:${color}">${this._esc(username)}:</span> ${safe}</div>`;
+    while(box.children.length>MP_CHAT_MAX_MESSAGES) box.removeChild(box.firstChild);
     box.scrollTop=box.scrollHeight;
   },
 
@@ -1929,7 +2043,13 @@ var MP = {
 
   playAgain(){
     const res=document.getElementById('mp-results-menu'); if(res) res.remove();
+    this._myReady = false;
+    this._results = [];
+    Object.values(this.players).forEach(p=>{ p.alive=true; p.score=0; p.ready=false; });
     this.openLobby();
+    if(this.channel){
+      this._showWaiting();
+    }
   },
   endAndMenu(){
     const res=document.getElementById('mp-results-menu'); if(res) res.remove();
